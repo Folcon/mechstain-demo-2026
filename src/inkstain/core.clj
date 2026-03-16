@@ -234,56 +234,56 @@
   (app/doui (window/set-z-order @state/*window :normal))
   (app/doui (window/set-z-order @state/*window :floating)))
 
-(comment
-  (-main)
-  (identity @*clicks)
-  (identity @state/*window)
-  (dissoc (get-in @state/*state [:world #_::land/civ-name->civ]) ::land/elev ::land/elev-noise ::land/temp ::land/temp-noise)
-
-  (let [civs (get-in @state/*state [:world #_::land/civ-name->civ #_::land/area->manor ::land/area->resources])]
-    civs
-    #_(into #{} (comp (map (fn [[_k {::civ/keys [territory]}]] territory)) cat) civs))
-
-  (let [economy (get-in @state/*state [:world ::land/economy])]
-    economy)
-
-  (identity @fruit-economy.core/*clicks)
-
-  (identity fruit-economy.core/app)
-
-  (select-keys @state/*state [:viewport-width :viewport-height :cell])
-
-  (use 'clojure.reflect 'clojure.pprint)
-  (clojure.pprint/pprint (clojure.reflect/reflect fruit-economy.core/app))
-
-  (swap! *clicks inc)
-
-  (require '[clj-async-profiler.core :as prof])
-  (prof/profile-for 60)
-  (prof/profile {:return-file true}
-    (basic/tick-world-1000x))
-  (prof/serve-files 8080)
-
-  (prof/profile
-    (basic/tick-world-1000x))
-
-  (let [interesting-flamegraph "/tmp/clj-async-profiler/results/01-cpu-flamegraph-2022-01-19-16-09-18.html"
-        profiling-path (str/replace interesting-flamegraph "/tmp/" "resources/profiling/")]
-    (io/make-parents profiling-path)
-    (io/copy (io/file interesting-flamegraph) (io/file profiling-path)))
-
-  (prof/find-profile "/tmp/clj-async-profiler/results/01_02-cpu-diff-2022-02-13-20-35-54.svg")
-
-  (let [before-flamegraph 1 #_"/tmp/clj-async-profiler/results/02-cpu-flamegraph-2022-02-13-20-23-35.svg"
-        after-flamegraph 2 #_"/tmp/clj-async-profiler/results/01-cpu-flamegraph-2022-02-13-19-52-24.svg"]
-    (prof/generate-diffgraph before-flamegraph after-flamegraph {}))
-
-
-  ;; Portal
-  (do
-    (def portal ((requiring-resolve 'portal.api/open)))
-    (add-tap (requiring-resolve 'portal.api/submit)))
-
-  (defn t> [args]
-    (tap> args)
-    args),)
+;;(comment
+;;  (-main)
+;;  (identity @*clicks)
+;;  (identity @state/*window)
+;;  (dissoc (get-in @state/*state [:world #_::land/civ-name->civ]) ::land/elev ::land/elev-noise ::land/temp ::land/temp-noise)
+;;
+;;  (let [civs (get-in @state/*state [:world #_::land/civ-name->civ #_::land/area->manor ::land/area->resources])]
+;;    civs
+;;    #_(into #{} (comp (map (fn [[_k {::civ/keys [territory]}]] territory)) cat) civs))
+;;
+;;  (let [economy (get-in @state/*state [:world ::land/economy])]
+;;    economy)
+;;
+;;  (identity @fruit-economy.core/*clicks)
+;;
+;;  (identity fruit-economy.core/app)
+;;
+;;  (select-keys @state/*state [:viewport-width :viewport-height :cell])
+;;
+;;  (use 'clojure.reflect 'clojure.pprint)
+;;  (clojure.pprint/pprint (clojure.reflect/reflect fruit-economy.core/app))
+;;
+;;  (swap! *clicks inc)
+;;
+;;  (require '[clj-async-profiler.core :as prof])
+;;  (prof/profile-for 60)
+;;  (prof/profile {:return-file true}
+;;    (basic/tick-world-1000x))
+;;  (prof/serve-files 8080)
+;;
+;;  (prof/profile
+;;    (basic/tick-world-1000x))
+;;
+;;  (let [interesting-flamegraph "/tmp/clj-async-profiler/results/01-cpu-flamegraph-2022-01-19-16-09-18.html"
+;;        profiling-path (str/replace interesting-flamegraph "/tmp/" "resources/profiling/")]
+;;    (io/make-parents profiling-path)
+;;    (io/copy (io/file interesting-flamegraph) (io/file profiling-path)))
+;;
+;;  (prof/find-profile "/tmp/clj-async-profiler/results/01_02-cpu-diff-2022-02-13-20-35-54.svg")
+;;
+;;  (let [before-flamegraph 1 #_"/tmp/clj-async-profiler/results/02-cpu-flamegraph-2022-02-13-20-23-35.svg"
+;;        after-flamegraph 2 #_"/tmp/clj-async-profiler/results/01-cpu-flamegraph-2022-02-13-19-52-24.svg"]
+;;    (prof/generate-diffgraph before-flamegraph after-flamegraph {}))
+;;
+;;
+;;  ;; Portal
+;;  (do
+;;    (def portal ((requiring-resolve 'portal.api/open)))
+;;    (add-tap (requiring-resolve 'portal.api/submit)))
+;;
+;;  (defn t> [args]
+;;    (tap> args)
+;;    args),)
