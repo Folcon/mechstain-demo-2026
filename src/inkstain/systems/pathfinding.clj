@@ -62,9 +62,8 @@
          width' (dec width)
          height' (dec height)]
 
-     (when (and (grid/walkable? grid sx sy)
-             (grid/walkable? grid ex ey))
-       (search grid width' height' open closed start end))))
+     ;; we check start / end validity
+     (search grid width' height' open closed start end)))
 
   ([grid width height open closed start end]
    (when-let [[coord [_ _ _ parent]] (peek open)]
@@ -84,29 +83,50 @@
          (recur grid width height open closed start end))
        (path end parent closed)))))
 
-(defn draw-grid [grid start end]
-  (let [path (time (search grid start end))
-        draw-path (into #{} (time (search grid start end)))
-        _ (println "Path:")
-        _ (pprint/pprint path)
-        {:keys [width height]} grid
-        area (map
-               (fn [y]
-                 (map
-                   (fn [x]
-                     (let [walkable? (grid/walkable? grid x y)]
-                       ;;(println idx walkable? width height)
-                       ;;(println x y)
-                       ;;(println :idx idx (grid/cell-idx x y width))
-                       (cond
-                         (contains? draw-path [x y]) \x
-                         (not walkable?) \#
-                         :else \space)))
-                   (range width)))
-               (range height))]
+(defn try-search
+  ([grid start end] (try-search grid start end {:check-start? true :check-end? true}))
+  ([grid start end {:keys [check-start? check-end?] :or {check-start? true check-end? true}}]
+   (let [[sx sy] start
+         [ex ey] end
+         start? (grid/walkable? grid sx sy)
+         end? (grid/walkable? grid ex ey)]
+     (when
+       (or
+         (and check-start? (not check-end?) start?)
+         (and check-end? (not check-start?) end?)
+         (and check-start? check-end? start? end?))
+       (search grid start end)))))
 
-    (doseq [line area]
-      (println line))))
+(defn loose-search
+  "only check if the end is walkable"
+  [grid start end]
+  (try-search grid start end {:check-end? true}))
+
+(defn draw-grid
+  ([grid start end] (draw-grid grid start end {}))
+  ([grid start end opts]
+   (let [path (time (try-search grid start end opts))
+         draw-path (into #{} path)
+         _ (println "Path:")
+         _ (pprint/pprint path)
+         {:keys [width height]} grid
+         area (map
+                (fn [y]
+                  (map
+                    (fn [x]
+                      (let [walkable? (grid/walkable? grid x y)]
+                        ;;(println idx walkable? width height)
+                        ;;(println x y)
+                        ;;(println :idx idx (grid/cell-idx x y width))
+                        (cond
+                          (contains? draw-path [x y]) \x
+                          (not walkable?) \#
+                          :else \space)))
+                    (range width)))
+                (range height))]
+
+     (doseq [line area]
+       (println line)))))
 
 (defn create-grid
   ([width length]
@@ -126,25 +146,27 @@
     {:width width :height height
      :walkable (into [] (comp cat (map (fn [x] (= x 0)))) maze)}))
 
-(defn draw-maze [maze start end]
-  (let [grid (maze->grid maze)
-        path (time (search grid start end))
-        draw-path (into #{} path)
-        _ (println "Path:")
-        _ (pprint/pprint path)
-        area (map-indexed
-               (fn [idx-row row]
-                 (map-indexed
-                   (fn [idx-col col]
-                     (cond
-                       (contains? draw-path [idx-col idx-row]) \x
-                       (= 1 col) \#
-                       :else \space))
-                   row))
-               maze)]
+(defn draw-maze
+  ([maze start end] (draw-maze maze start end {}))
+  ([maze start end opts]
+   (let [grid (maze->grid maze)
+         path (time (try-search grid start end opts))
+         draw-path (into #{} path)
+         _ (println "Path:")
+         _ (pprint/pprint path)
+         area (map-indexed
+                (fn [idx-row row]
+                  (map-indexed
+                    (fn [idx-col col]
+                      (cond
+                        (contains? draw-path [idx-col idx-row]) \x
+                        (= 1 col) \#
+                        :else \space))
+                    row))
+                maze)]
 
-    (doseq [line area]
-      (println line))))
+     (doseq [line area]
+       (println line)))))
 
 (comment
   (create-grid 5 4)
@@ -212,3 +234,10 @@
 
 #_ ;; Goal at the very corner
 (draw-maze maze5 [0 0] [4 0])
+
+;; 2x1 grid starting not walkable to check it works if start is not walkable
+(def maze6
+  [[1 0]])
+
+#_ ;; it's not pathfinding's job to see if it can traverse the start
+(draw-maze maze6 [0 0] [1 0] {:check-start? false})
