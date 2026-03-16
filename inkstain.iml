@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="BuildSystem">
+    <option name="buildSystemId" value="CLOJURE_DEPS" />
+    <option name="displayName" value="inkstain" />
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/dev" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/classes" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Deps: org.clojure/data.json:0.2.6" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/clojure:1.12.4" level="project" />
+    <orderEntry type="library" name="Deps: lambdaisland/deep-diff2:2.11.216" level="project" />
+    <orderEntry type="library" name="Deps: criterium:0.4.6" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-shared:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/core.specs.alpha:0.2.62" level="project" />
+    <orderEntry type="library" name="Deps: guru.nidi/graphviz-java:0.18.1" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-windows-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/spec.alpha:0.3.218" level="project" />
+    <orderEntry type="library" name="Deps: net.arnx/nashorn-promise:0.1.1" level="project" />
+    <orderEntry type="library" name="Deps: lambdaisland/clj-diff:1.4.78" level="project" />
+    <orderEntry type="library" name="Deps: tailrecursion/cljs-priority-map:1.2.1" level="project" />
+    <orderEntry type="library" name="Deps: org.slf4j/jcl-over-slf4j:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-linux-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.tonsky/duti:fc833a" level="project" />
+    <orderEntry type="library" name="Deps: com.github.tommyettinger/regexodus:0.1.14" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/google-closure-library:0.0-20151016-61277aea" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/clojurescript:1.7.170" level="project" />
+    <orderEntry type="library" name="Deps: com.clojure-goes-fast/clj-async-profiler:1.3.0" level="project" />
+    <orderEntry type="library" name="Deps: aysylu/loom:1.0.2" level="project" />
+    <orderEntry type="library" name="Deps: fipp:0.6.27" level="project" />
+    <orderEntry type="library" name="Deps: org.slf4j/jul-to-slf4j:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/jwm:0.4.18" level="project" />
+    <orderEntry type="library" name="Deps: mvxcvi/arrangement:2.1.0" level="project" />
+    <orderEntry type="library" name="Deps: org.webjars.npm/viz.js-graphviz-java:2.1.3" level="project" />
+    <orderEntry type="library" name="Deps: clj-tuple:0.2.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.tonsky/extend-clj:0.1.0" level="project" />
+    <orderEntry type="library" name="Deps: io.github.tonsky/clj-reload:0.7.0" level="project" />
+    <orderEntry type="library" name="Deps: org.mozilla/rhino:1.7R5" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/types$clojure:0.2.0" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/google-closure-library-third-party:0.0-20151016-61277aea" level="project" />
+    <orderEntry type="library" name="Deps: hiccup:1.0.5" level="project" />
+    <orderEntry type="library" name="Deps: guru.nidi.com.eclipsesource.j2v8/j2v8_macosx_x86_64:4.6.0" level="project" />
+    <orderEntry type="library" name="Deps: riddley:0.1.12" level="project" />
+    <orderEntry type="library" name="Deps: environ:1.2.0" level="project" />
+    <orderEntry type="library" name="Deps: borkdude/dynaload:0.3.5" level="project" />
+    <orderEntry type="library" name="Deps: borkdude/edamame:1.4.27" level="project" />
+    <orderEntry type="library" name="Deps: metosin/malli:0.17.0" level="project" />
+    <orderEntry type="library" name="Deps: com.google.javascript/closure-compiler:v20151015" level="project" />
+    <orderEntry type="library" name="Deps: guru.nidi.com.kitfox/svgSalamander:1.1.3" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/core.rrb-vector:0.1.2" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/tools.reader:1.3.4" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-arm64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: potemkin:0.4.5" level="project" />
+    <orderEntry type="library" name="Deps: nrepl:1.5.0" level="project" />
+    <orderEntry type="library" name="Deps: com.rpl/specter:1.1.2" level="project" />
+    <orderEntry type="library" name="Deps: org.slf4j/slf4j-api:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: dorothy:0.0.6" level="project" />
+    <orderEntry type="library" name="Deps: ubergraph:0.8.2" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/test.check:1.1.1" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/data.priority-map:1.2.1" level="project" />
+    <orderEntry type="library" name="Deps: com.google.code.findbugs/jsr305:3.0.2" level="project" />
+    <orderEntry type="library" name="Deps: org.apache.commons/commons-exec:1.3" level="project" />
+    <orderEntry type="library" name="Deps: com.squidpony/squidlib-util:3.0.6" level="project" />
+    <orderEntry type="module" module-name="HumbleUI" />
+  </component>
+</module>

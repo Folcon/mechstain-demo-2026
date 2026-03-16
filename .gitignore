@@ -1,0 +1,8 @@
+/.clj-kondo
+/.cpcache
+.DS_Store
+/.idea
+.state
+.repl-port
+.lein-env
+/checkouts

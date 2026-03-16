@@ -1,0 +1,7 @@
+--verbose
+--name "Fruit Economy"
+--input target
+--main-jar fruit-economy-standalone.jar
+--main-class clojure.main
+--arguments -m
+--arguments fruit-economy.core
