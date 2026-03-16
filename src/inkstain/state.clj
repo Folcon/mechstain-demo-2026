@@ -4,9 +4,7 @@
 
 (defonce *next-id (atom 0))
 (defn next-id []
-  (let [id @*next-id]
-    (swap! *next-id inc)
-    id))
+  (dec (swap! *next-id inc)))
 
 (defonce *state (atom {}))
 (defonce *ui-tree (atom nil))
