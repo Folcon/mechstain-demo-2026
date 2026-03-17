@@ -1,5 +1,6 @@
 (ns inkstain.systems.tick
-  (:require [inkstain.state :as state]
+  (:require [inkstain.peep :as peep]
+            [inkstain.state :as state]
             [inkstain.systems.grid :as grid]
             [inkstain.input :as input]
             [inkstain.systems.pathfinding :as pathfinding]
@@ -241,3 +242,13 @@
   (let [{:keys [player allies enemies]}
         (combat/process-combat (:player @state/*state) (:allies @state/*state) (:enemies @state/*state) dt-s)]
     (swap! state/*state assoc :player player :allies allies :enemies enemies)))
+
+(defn tick-spawning [dt-s]
+  (when (and (> (:hp (:player @state/*state)) 0)
+          (< (count (:enemies @state/*state)) 100))
+    (let [timer (- (:spawn-timer @state/*state) dt-s)]
+      (if (<= timer 0)
+        (let [pos (grid/random-edge-pos (:grid @state/*state))]
+          (swap! state/*state assoc :spawn-timer (:spawn-interval @state/*state))
+          (swap! state/*state update :enemies conj (peep/make-enemy pos)))
+        (swap! state/*state assoc :spawn-timer timer)))))

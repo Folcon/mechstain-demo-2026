@@ -45,36 +45,6 @@
 (def ^Paint paint
   (ui/paint {:fill "0F0"}))
 
-(defn random-edge-pos [grid]
-  (let [{:keys [width height]} grid
-        edge (rand-int 4)]
-    (case edge
-      0 [(rand-int width) 0]            ;; top
-      1 [(rand-int width) (dec height)] ;; bottom
-      2 [0 (rand-int height)]           ;; left
-      3 [(dec width) (rand-int height)] ;; right
-      ,)))
-
-(defn random-spawn-pos [player-pos grid]
-  (let [[px py] player-pos
-        {:keys [width height]} grid
-        radius 20
-        angle (* (rand) 2.0 Math/PI)
-        x (int (+ px (* radius (Math/cos angle))))
-        y (int (+ py (* radius (Math/sin angle))))
-        x (max 0 (min (dec width) x))
-        y (max 0 (min (dec height) y))]
-    (if (grid/walkable? grid x y)
-      [x y]
-      ;; fallback: try a few more times
-      (let [[x y] (first (filter (fn [[x y]] (grid/walkable? grid x y))
-                           (for [_ (range 10)]
-                             (let [a (* (rand) 2.0 Math/PI)]
-                               [(max 0 (min (dec width) (int (+ px (* radius (Math/cos a))))))
-                                (max 0 (min (dec height) (int (+ py (* radius (Math/sin a))))))]))))]
-        (or (when (and x y) [x y])
-          [(int px) (int py)])))))
-
 (defn tick [[x y]])
 
 (defn draw-hp-bar [canvas paint x y hp max-hp]
@@ -148,14 +118,7 @@
         (tick (some->> @state/*state :producing (mapv #(quot % tile-size-px)))))
 
       ;; spawn timer
-      (when (and (> (:hp (:player @state/*state)) 0)
-              (< (count (:enemies @state/*state)) 100))
-        (let [timer (- (:spawn-timer @state/*state) dt-s)]
-          (if (<= timer 0)
-            (let [pos (random-edge-pos (:grid @state/*state))]
-              (swap! state/*state assoc :spawn-timer (:spawn-interval @state/*state))
-              (swap! state/*state update :enemies conj (peep/make-enemy pos)))
-            (swap! state/*state assoc :spawn-timer timer))))
+      (tick/tick-spawning dt-s)
 
       ;; render
       (canvas/clear canvas 0xFF1A1A2E)
