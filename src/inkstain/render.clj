@@ -109,9 +109,9 @@
                                (and (> player-dist 3.0) (<= timer 0))
                                ;; repath towards player who's moved
                                (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                             (let [tx (+ (int px) (- (rand-int 3) 1))
-                                   ty (+ (int py) (- (rand-int 3) 1))
-                                   path (pathfinding/try-search grid [(int ax) (int ay)] [tx ty])]
+                             (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
+                                   ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                                   path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
                                (assoc ally
                                  :path (vec (or path []))
                                  :state (if path :moving :idle)
