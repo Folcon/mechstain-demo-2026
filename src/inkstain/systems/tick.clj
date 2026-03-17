@@ -11,56 +11,52 @@
 
 
 
-(defn tick-player-input [*state held dt]
+(defn tick-player-input [state {:keys [held controller dt]}]
   (let [;; pixels per second
-        speed (-> @*state :player :speed)
+        speed (-> state :player :speed)
         move-speed (* speed dt)
 
         ;; keyboard
         ;; panning via held keys - applied in pixel-offset space
-        dx (cond
-             (or (held :a) (held :left)) (- move-speed)
-             (or (held :d) (held :right)) move-speed
-             :else 0)
-        dy (cond
-             (or (held :w) (held :up)) (- move-speed)
-             (or (held :s) (held :down)) move-speed
-             :else 0)]
-    (when (seq held)
-      (swap! *state update :player
-        (fn [player]
-          (let [[px py] (:pos player)]
-            (assoc player :pos [(+ px dx) (+ py dy)])))))
+        dx-kb (cond
+                (or (held :a) (held :left)) (- move-speed)
+                (or (held :d) (held :right)) move-speed
+                :else 0)
+        dy-kb (cond
+                (or (held :w) (held :up)) (- move-speed)
+                (or (held :s) (held :down)) move-speed
+                :else 0)
 
-    ;; bounds checking
-    (swap! state/*state
-      (fn [state]
-        (let [grid (:grid state)
-              clamp-fn (partial grid/clamp grid)]
-          (-> state
-            (update-in [:player :pos] clamp-fn)
-            (assoc :allies (mapv (fn [ally] (update ally :pos clamp-fn)) (:allies state)))
-            (assoc :enemies (mapv (fn [enemy] (update enemy :pos clamp-fn)) (:enemies state)))))))
+        ;; controller
+        [lx ly rx ry] (if controller
+                        [(input/left-stick-x controller)    ;; -1.0 to 1.0
+                         (input/left-stick-y controller)    ;; -1.0 to 1.0
+                         ;; for camera later
+                         (input/right-stick-x controller)
+                         (input/right-stick-y controller)]
+                        [0 0 0 0])
 
-    ;; Poll each frame in on-paint
-    (let [^ControllerState state (input/get-state 0)]
-      (when (input/connected? state)
-        (let [lx (input/left-stick-x state)      ;; -1.0 to 1.0
-              ly (input/left-stick-y state)      ;; -1.0 to 1.0
-              ;; for camera later
-              rx (input/right-stick-x state)
-              ry (input/right-stick-y state)]
-          (swap! state/*state update :player
-            (fn [player]
-              (let [[px py] (:pos player)
-                    dx (* lx move-speed)
-                    dy (* ly move-speed)]
-                (assoc player :pos [(+ px dx) (+ py dy)]))))
-          (cond
-            (input/dpad-up state)    (swap! state/*state assoc :tactical-mode :aggressive)
-            (input/dpad-down state)  (swap! state/*state assoc :tactical-mode :defensive)
-            (input/dpad-left state)  (swap! state/*state assoc :tactical-mode :flank)
-            (input/dpad-right state) (swap! state/*state assoc :tactical-mode :hold)))))))
+        ;; TODO: Check if bug with keyboard + controller giving extra speed
+        dx (+ dx-kb (* lx move-speed))
+        dy (+ dy-kb (* ly move-speed))
+
+        tactical-mode (cond
+                        (input/dpad-up controller) :aggressive
+                        (input/dpad-down controller) :defensive
+                        (input/dpad-left controller) :flank
+                        (input/dpad-right controller) :hold)]
+    (-> state
+      (update-in [:player :pos]
+        (fn [[px py]] [(+ px dx) (+ py dy)]))
+      (assoc :tactical-mode tactical-mode))))
+
+(defn tick-bounds-check [state]
+  (let [grid (:grid state)
+        clamp-fn (partial grid/clamp grid)]
+    (-> state
+      (update-in [:player :pos] clamp-fn)
+      (assoc :allies (mapv (fn [ally] (update ally :pos clamp-fn)) (:allies state)))
+      (assoc :enemies (mapv (fn [enemy] (update enemy :pos clamp-fn)) (:enemies state))))))
 
 (defn tick-ally-movement [dt]
   (swap! state/*state

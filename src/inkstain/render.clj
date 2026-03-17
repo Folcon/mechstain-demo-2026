@@ -8,10 +8,12 @@
    [inkstain.state :as state]
    [inkstain.systems.grid :as grid]
    [inkstain.camera :as camera]
+   [inkstain.input :as input]
    [inkstain.systems.tick :as tick]
    [inkstain.peep :as peep]
    [inkstain.utils :as utils])
   (:import
+   [com.studiohartman.jamepad ControllerState]
    [io.github.humbleui.skija Color4f Paint]))
 
 
@@ -66,15 +68,20 @@
         now-ns (System/nanoTime)
         last-ns (:last-render @state/*state)
         dt (/ (- now-ns last-ns) 1e9)
-        held @state/*keys-held]
+        held @state/*keys-held
+        controller (when-let [^ControllerState cs (input/get-state 0)]
+                     (when (input/connected? cs)
+                       cs))]
     (swap! state/*state assoc :last-render now-ns)
 
     ;; input
-    (tick/tick-player-input state/*state held dt)
+    (tick/tick-player-input state/*state {:held held :controller controller :dt dt})
 
     (tick/tick-ally-movement dt)
 
     (tick/tick-enemy-movement dt)
+
+    (tick/tick-bounds-check state/*state)
 
     (tick/tick-combat dt)
 
