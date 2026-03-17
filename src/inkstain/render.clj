@@ -11,6 +11,8 @@
    [inkstain.systems.grid :as grid]
    [inkstain.camera :as camera]
    [inkstain.input :as input]
+   [inkstain.systems.pathfinding :as pathfinding]
+   [inkstain.systems.movement :as movement]
    [inkstain.peep :as peep]
    [inkstain.utils :as utils])
   (:import
@@ -28,7 +30,9 @@
     {:last-render (System/nanoTime)
      :camera      (camera/create-camera)
      :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
-     :player      (peep/make-player [5 5])}))
+     :player      (peep/make-player [5 5])
+     :allies      (vec (for [_i (range 5)]
+                         (peep/make-peep [(+ 4 (rand-int 3)) (+ 4 (rand-int 3))] :ally)))}))
 
 (defn lch->rgb ^Color4f [c]
   (-> c
@@ -85,6 +89,37 @@
                       dx (* lx move-speed)
                       dy (* ly move-speed)]
                   (assoc player :pos [(+ px dx) (+ py dy)]))))))))
+
+    (swap! *state
+      (fn [state]
+        (let [allies (:allies state)
+              [px py] (:pos (:player state))
+              grid (:grid state)]
+          (assoc state :allies
+            (mapv
+              (fn [ally]
+                (let [[ax ay] (:pos ally)
+                      player-dist (Math/sqrt (+ (Math/pow (- px ax) 2) (Math/pow (- py ay) 2)))
+                      [tx ty] (or (:last-target ally) [px py])
+                      player-moved-dist (Math/sqrt (+ (Math/pow (- px tx) 2) (Math/pow (- py ty) 2)))
+                      timer (- (or (:repath-timer ally) 0) dt-s)
+                      ally (if
+                             (or
+                               ;; repath toward player with offset
+                               (and (> player-dist 3.0) (<= timer 0))
+                               ;; repath towards player who's moved
+                               (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
+                             (let [tx (+ (int px) (- (rand-int 3) 1))
+                                   ty (+ (int py) (- (rand-int 3) 1))
+                                   path (pathfinding/try-search grid [(int ax) (int ay)] [tx ty])]
+                               (assoc ally
+                                 :path (vec (or path []))
+                                 :state (if path :moving :idle)
+                                 :repath-timer 0.75
+                                 :last-target [px py]))
+                             (assoc ally :repath-timer (max 0 timer)))]
+                  (movement/step-movement ally dt-s)))
+              allies)))))
 
     ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
@@ -152,6 +187,11 @@
             (.setColor4f paint (Color4f. 0.9 0.2 0.2 1.0))  ;; red
             ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
             (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) 0.4 paint))
+
+          (doseq [ally (:allies @*state)]
+            (let [[px py] (:pos ally)]
+              (.setColor4f paint (Color4f. 0.3 0.5 0.9 1.0))
+              (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) 0.4 paint)))
 
           ,)))
 
