@@ -7,7 +7,7 @@
 
 
 
-(def *screen (atom :menu))  ;; :menu :playing :paused :dead
+(def *screen (ui/signal :menu))  ;; :menu :playing :paused :dead
 (def *score (atom {:kills 0 :time 0}))
 
 (ui/defcomp menu-screen []
