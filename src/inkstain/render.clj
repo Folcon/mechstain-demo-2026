@@ -1,7 +1,5 @@
 (ns inkstain.render
   (:require
-   [clojure.string :as str]
-   [clojure.math :as math]
    [io.github.humbleui.canvas :as canvas]
    [io.github.humbleui.ui :as ui]
    [io.github.humbleui.util :as util]
