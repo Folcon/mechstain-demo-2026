@@ -8,6 +8,8 @@
 (def init-window-size [1280 720])
 (def version-string (version/version-string engine-name))
 
-(def log-effects? (env :debug))
+(def debug? (boolean (env :debug)))
+
+(def log-effects? debug?)
 
 (def default-tile-size 32)

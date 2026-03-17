@@ -4,7 +4,7 @@ demo:
 	clj -M:demo
 
 dev:
-	clj -M:dev
+	DEBUG=true clj -M:dev
 
 local:
 	lein clean && lein with-profile +macos,+prod trampoline run
