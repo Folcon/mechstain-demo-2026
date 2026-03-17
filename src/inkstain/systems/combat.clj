@@ -44,7 +44,7 @@
     (<= (:death-timer entity 0) 0)))
 
 (defn start-dying [entity]
-  (assoc entity :death-timer 0.5 :state :dying))  ;; 500ms death animation
+  (assoc entity :death-timer 0.5 :state :dying :tombstone true))  ;; 500ms death animation
 
 (defn update-death-timers [entities dt]
   (mapv (fn [e]

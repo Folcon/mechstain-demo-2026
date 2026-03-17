@@ -37,9 +37,12 @@
     [ui/center
      [ui/column {:gap 20}
       [ui/center
-       [ui/label {:font-weight :bold} "YOU DIED"]
-       [ui/label (str "Time: "  (:time-alive score))]
-       [ui/label (str "Kills: " (:kills score))]
+       [ui/label {:font-weight :bold} "YOU DIED"]]
+      [ui/center
+       [ui/label (str "Time: "  (long (:time-alive score)) "s")]]
+      [ui/center
+       [ui/label (str "Kills: " (:kills score))]]
+      [ui/center
        [ui/label (str "Scrap: " (:scrap score))]]
       [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
        "Return to Menu"]]]))

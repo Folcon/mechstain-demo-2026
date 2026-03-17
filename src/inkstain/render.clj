@@ -249,5 +249,13 @@
      [ui/label (str (-> @state/*state :camera ((juxt :offset-x :offset-y))))]]]
    [ui/padding {:padding 5}
     [ui/align {:x :right :y :top}
-     [ui/label {:font-weight :bold}
-      (str "Mode: " (name (:tactical-mode @state/*state)))]]]])
+     [ui/rect {:paint {:fill 0x80000000} :radius 4}
+      [ui/column
+       [ui/padding {:horizontal 8 :vertical 4}
+        [ui/label {:font-weight :bold :paint {:fill 0xFFFFFFFF}}
+         (str "Mode: " (name (:tactical-mode @state/*state)))]]
+       [ui/padding {:horizontal 8 :vertical 4}
+        [ui/label {:font-weight :bold :paint {:fill 0xFFFFFFFF}}
+         (str "Scrap: " (get-in @state/*state [:score :scrap])
+           "  Kills: " (get-in @state/*state [:score :kills])
+           "  Time Alive: " (format "%3d" (long (get-in @state/*state [:score :time-alive]))) "s")]]]]]]])

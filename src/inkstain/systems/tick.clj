@@ -237,6 +237,17 @@
         (combat/process-combat (:player state) (:allies state) (:enemies state) dt)]
     (assoc state :player player :allies allies :enemies enemies)))
 
+(defn tick-score [state dt]
+  (let [have-tombstones (count (filter (fn [e] (contains? e :tombstone))
+                                 (:enemies state)))
+        scrap-per-kill 10]
+    (-> state
+      ;; clear all tombstones
+      (update :enemies (partial into [] (map (fn [e] (dissoc e :tombstone)))))
+      (update-in [:score :kills] + have-tombstones)
+      (update-in [:score :scrap] + (* scrap-per-kill have-tombstones))
+      (update-in [:score :time-alive] + dt))))
+
 (defn tick-spawning [state dt]
   (if (and (> (:hp (:player state)) 0)
         (< (count (:enemies state)) 100))
@@ -249,6 +260,11 @@
         (assoc state :spawn-timer timer)))
     state))
 
+(defn tick-check-death [state]
+  (when (<= (:hp (:player state)) 0)
+    (reset! state/*screen :dead))
+  state)
+
 (defn tick [state {:keys [held controller dt] :as opts}]
   (-> state
     (tick-player-input opts)
@@ -256,4 +272,6 @@
     (tick-enemy-movement dt)
     (tick-bounds-check)
     (tick-combat dt)
-    (tick-spawning dt)))
+    (tick-score dt)
+    (tick-spawning dt)
+    (tick-check-death)))
