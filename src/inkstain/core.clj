@@ -47,7 +47,10 @@
    [io.github.humbleui.signal :as signal]
    [io.github.humbleui.ui :as ui]
    [io.github.humbleui.util :as util]
-   [io.github.humbleui.window :as window]))
+   [io.github.humbleui.window :as window]
+   [inkstain.render :as render]))
+
+
 
 (defn load-state []
   (let [file (io/file ".state")]
@@ -89,7 +92,9 @@
   (promise))
 
 (def examples
-  [["Documented"
+  [["Game"
+    [["Tactical" render/ui]]]
+   ["Documented"
     docs/examples]
    ["Components"
     [["Animation" examples.animation/ui]

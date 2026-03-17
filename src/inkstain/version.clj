@@ -19,7 +19,7 @@
                 ;; Fallback for dev: try git
                (try
                  (let [sha (-> (Runtime/getRuntime)
-                               (.exec (into-array ["git" "rev-parse" "--short" "HEAD"]))
+                               (.exec ^String/1 (into-array String ["git" "rev-parse" "--short" "HEAD"]))
                                (.getInputStream)
                                (slurp)
                                (str/trim))]
