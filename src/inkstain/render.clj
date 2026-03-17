@@ -244,12 +244,14 @@
         (tick (some->> @*state :producing (mapv #(quot % tile-size-px)))))
 
       ;; spawn timer
-      (let [timer (- (:spawn-timer @*state) dt-s)]
-        (if (<= timer 0)
-          (let [pos (random-edge-pos (:grid @*state))]
-            (swap! *state assoc :spawn-timer (:spawn-interval @*state))
-            (swap! *state update :enemies conj (peep/make-enemy pos)))
-          (swap! *state assoc :spawn-timer timer)))
+      (when (and (> (:hp (:player @*state)) 0)
+              (< (count (:enemies @*state)) 100))
+        (let [timer (- (:spawn-timer @*state) dt-s)]
+          (if (<= timer 0)
+            (let [pos (random-edge-pos (:grid @*state))]
+              (swap! *state assoc :spawn-timer (:spawn-interval @*state))
+              (swap! *state update :enemies conj (peep/make-enemy pos)))
+            (swap! *state assoc :spawn-timer timer))))
 
       ;; render
       (canvas/clear canvas 0xFF1A1A2E)
