@@ -32,6 +32,8 @@
      :spawn-interval 3.0
 
      :tactical-mode :aggressive
+
+     :score {:kills 0 :scrap 0 :time-alive 0}
      ,}))
 
 (defn lch->rgb ^Color4f [c]

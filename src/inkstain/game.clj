@@ -7,8 +7,6 @@
 
 
 
-(def *score (atom {:kills 0 :time 0}))
-
 (ui/defcomp menu-screen []
   [ui/center
    [ui/column {:gap 20}
@@ -16,7 +14,6 @@
      [ui/label {:font-weight :bold} "MECHSTAIN"]]
     [ui/button {:on-click (fn [_]
                             (reset! state/*state (render/init-state))
-                            (reset! *score {:kills 0 :time 0})
                             (reset! state/*screen :playing))}
      "Start"]
     [ui/button {:on-click fns/maybe-quit}
@@ -36,13 +33,16 @@
        "Return to Menu"]]]]])
 
 (ui/defcomp death-screen []
-  [ui/center
-   [ui/column {:gap 20}
+  (let [score (:score @state/*state)]
     [ui/center
-     [ui/label {:font-weight :bold} "YOU DIED"]
-     [ui/label (str "Kills: " (:kills @*score))]]
-    [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
-     "Return to Menu"]]])
+     [ui/column {:gap 20}
+      [ui/center
+       [ui/label {:font-weight :bold} "YOU DIED"]
+       [ui/label (str "Time: "  (:time-alive score))]
+       [ui/label (str "Kills: " (:kills score))]
+       [ui/label (str "Scrap: " (:scrap score))]]
+      [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
+       "Return to Menu"]]]))
 
 
 (ui/defcomp game-root []
