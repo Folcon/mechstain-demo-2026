@@ -13,6 +13,7 @@
    [inkstain.input :as input]
    [inkstain.systems.pathfinding :as pathfinding]
    [inkstain.systems.movement :as movement]
+   [inkstain.systems.combat :as combat]
    [inkstain.peep :as peep]
    [inkstain.utils :as utils])
   (:import
@@ -79,6 +80,24 @@
 
 (defn tick [[x y]])
 
+(defn draw-hp-bar [canvas paint x y hp max-hp]
+  (let [bar-width 0.8
+        bar-height 0.08
+        bar-x (+ x 0.1)
+        bar-y (- y 0.15)
+        hp-frac (max 0 (/ (double hp) max-hp))]
+    ;; background (dark)
+    (.setColor4f paint (Color4f. 0.2 0.2 0.2 0.8))
+    (canvas/draw-rect canvas (util/rect-xywh bar-x bar-y bar-width bar-height) paint)
+    ;; health portion (green → red)
+    (.setColor4f paint (Color4f. (float (- 1.0 hp-frac)) (float hp-frac) 0.1 0.9))
+    (canvas/draw-rect canvas (util/rect-xywh bar-x bar-y (* bar-width hp-frac) bar-height) paint)))
+
+(defn draw-hit [entity normal-colour]
+  (if (pos? (:hit-timer entity 0))
+    (.setColor4f paint (Color4f. 1.0 1.0 1.0 1.0))  ;; white flash
+    (.setColor4f paint normal-colour)))
+
 (defn on-paint [ctx canvas size]
   (let [;; timing
         now-ns (System/nanoTime)
@@ -138,7 +157,17 @@
                       [tx ty] (or (:last-target ally) [px py])
                       player-moved-dist (Math/sqrt (+ (Math/pow (- px tx) 2) (Math/pow (- py ty) 2)))
                       timer (- (or (:repath-timer ally) 0) dt-s)
-                      ally (if
+
+                      nearest-enemy (combat/find-nearest-hostile [ax ay]
+                                      (filter combat/alive? (:enemies state)))
+                      in-combat? (and nearest-enemy
+                                   (<= (combat/distance [ax ay] (:pos nearest-enemy))
+                                     (:attack-range ally 1.5)))
+
+                      ally (cond
+                             in-combat?
+                             (assoc ally :state :idle :path [])  ;; stop and fight
+
                              (or
                                ;; repath toward player with offset
                                (and (> player-dist 3.0) (<= timer 0))
@@ -152,6 +181,8 @@
                                  :state (if path :moving :idle)
                                  :repath-timer 0.75
                                  :last-target [px py]))
+
+                             :else
                              (assoc ally :repath-timer (max 0 timer)))]
                   (movement/step-movement ally dt-s)))
               allies)))))
@@ -175,6 +206,10 @@
                                   (assoc enemy :repath-timer timer))]
                       (movement/step-movement enemy dt-s)))
                 (:enemies state))))))
+
+    (let [{:keys [player allies enemies]}
+          (combat/process-combat (:player @*state) (:allies @*state) (:enemies @*state) dt-s)]
+      (swap! *state assoc :player player :allies allies :enemies enemies))
 
     ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
@@ -247,15 +282,25 @@
 
           (let [player (:player @*state)
                 [px py] (:pos player)]
-            (.setColor4f paint (Color4f. 0.9 0.2 0.2 1.0))  ;; red
-            ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
-            (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) 0.4 paint))
+            (draw-hit player (Color4f. 0.9 0.2 0.2 1.0))  ;; red
+            (let [death-timer (:death-timer player 0)
+                  radius (if (= :dying (:state player))
+                           (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
+                           0.4)]
+              ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
+              (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) radius paint))
+            (draw-hp-bar canvas paint px py (:hp player) (:max-hp player)))
 
           (doseq [ally (:allies @*state)]
             (let [[ax ay] (:pos ally)
                   path (:path ally)]
-              (.setColor4f paint (Color4f. 0.3 0.5 0.9 1.0))
-              (canvas/draw-circle canvas (+ ax 0.5) (+ ay 0.5) 0.4 paint)
+              (draw-hit ally (Color4f. 0.3 0.5 0.9 1.0))  ;; light blue
+              (let [death-timer (:death-timer ally 0)
+                    radius (if (= :dying (:state ally))
+                             (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
+                             0.4)]
+                (canvas/draw-circle canvas (+ ax 0.5) (+ ay 0.5) radius paint))
+              (draw-hp-bar canvas paint ax ay (:hp ally) (:max-hp ally))
 
               ;; draw debug pathfinding path
               (when (seq path)
@@ -278,8 +323,13 @@
         (doseq [enemy (:enemies @*state)]
           (let [[ex ey] (:pos enemy)
                 path (:path enemy)]
-            (.setColor4f paint (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
-            (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) 0.4 paint)
+            (draw-hit enemy (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
+            (let [death-timer (:death-timer enemy 0)
+                  radius (if (= :dying (:state enemy))
+                           (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
+                           0.4)]
+              (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) radius paint))
+            (draw-hp-bar canvas paint ex ey (:hp enemy) (:max-hp enemy))
             ;; path debug
             (when (seq path)
               (.setColor4f paint (Color4f. 1.0 0.2 0.2 0.5))  ;; red, semi-transparent
