@@ -7,7 +7,6 @@
 
 
 
-(def *screen (ui/signal :menu))  ;; :menu :playing :paused :dead
 (def *score (atom {:kills 0 :time 0}))
 
 (ui/defcomp menu-screen []
@@ -18,7 +17,7 @@
     [ui/button {:on-click (fn [_]
                             (reset! state/*state (render/init-state))
                             (reset! *score {:kills 0 :time 0})
-                            (reset! *screen :playing))}
+                            (reset! state/*screen :playing))}
      "Start"]
     [ui/button {:on-click fns/maybe-quit}
      "Quit"]]])
@@ -31,9 +30,9 @@
      [ui/column {:gap 20}
       [ui/center
        [ui/label {:font-weight :bold} "PAUSED"]]
-      [ui/button {:on-click (fn [_] (reset! *screen :playing))}
+      [ui/button {:on-click (fn [_] (reset! state/*screen :playing))}
        "Resume"]
-      [ui/button {:on-click (fn [_] (reset! *screen :menu))}
+      [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
        "Return to Menu"]]]]])
 
 (ui/defcomp death-screen []
@@ -42,7 +41,7 @@
     [ui/center
      [ui/label {:font-weight :bold} "YOU DIED"]
      [ui/label (str "Kills: " (:kills @*score))]]
-    [ui/button {:on-click (fn [_] (reset! *screen :menu))}
+    [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
      "Return to Menu"]]])
 
 
@@ -50,11 +49,11 @@
   [ui/key-listener
    {:on-key-down (fn [e]
                    (when (= :escape (:key e))
-                     (case @*screen
-                       :playing (reset! *screen :paused)
-                       :paused  (reset! *screen :playing)
+                     (case @state/*screen
+                       :playing (reset! state/*screen :paused)
+                       :paused  (reset! state/*screen :playing)
                        nil)))}
-   (case @*screen
+   (case @state/*screen
      :menu    [menu-screen]
      :playing [render/ui]
      :paused  [pause-screen]
