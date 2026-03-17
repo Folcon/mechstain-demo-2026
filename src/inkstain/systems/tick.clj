@@ -40,15 +40,17 @@
         dx (+ dx-kb (* lx move-speed))
         dy (+ dy-kb (* ly move-speed))
 
-        tactical-mode (cond
-                        (input/dpad-up controller) :aggressive
-                        (input/dpad-down controller) :defensive
-                        (input/dpad-left controller) :flank
-                        (input/dpad-right controller) :hold)]
+        tactical-mode (when controller
+                        (cond
+                          (input/dpad-up controller) :aggressive
+                          (input/dpad-down controller) :defensive
+                          (input/dpad-left controller) :flank
+                          (input/dpad-right controller) :hold))]
     (-> state
       (update-in [:player :pos]
         (fn [[px py]] [(+ px dx) (+ py dy)]))
-      (assoc :tactical-mode tactical-mode))))
+      (cond->
+        tactical-mode (assoc :tactical-mode tactical-mode)))))
 
 (defn tick-bounds-check [state]
   (let [grid (:grid state)
@@ -236,19 +238,20 @@
     (assoc state :player player :allies allies :enemies enemies)))
 
 (defn tick-spawning [state dt]
-  (when (and (> (:hp (:player state)) 0)
-          (< (count (:enemies state)) 100))
+  (if (and (> (:hp (:player state)) 0)
+        (< (count (:enemies state)) 100))
     (let [timer (- (:spawn-timer state) dt)]
       (if (<= timer 0)
         (let [pos (grid/random-edge-pos (:grid state))]
           (-> state
             (assoc :spawn-timer (:spawn-interval state))
             (update :enemies conj (peep/make-enemy pos))))
-        (assoc state :spawn-timer timer)))))
+        (assoc state :spawn-timer timer)))
+    state))
 
-(defn tick [state {:keys [held controller dt]}]
+(defn tick [state {:keys [held controller dt] :as opts}]
   (-> state
-    (tick-player-input {:keys [held controller dt]})
+    (tick-player-input opts)
     (tick-ally-movement dt)
     (tick-enemy-movement dt)
     (tick-bounds-check)
