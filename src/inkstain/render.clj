@@ -26,11 +26,8 @@
 (def tick-ms
   17)
 
-(def *state
-  (ui/signal nil))
-
 (defn init-state []
-  (reset! *state
+  (reset! state/*state
     {:last-render (System/nanoTime)
      :camera      (camera/create-camera)
      :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
@@ -106,23 +103,23 @@
 (defn on-paint [ctx canvas size]
   (let [;; timing
         now-ns (System/nanoTime)
-        last-ns (:last-render @*state)
+        last-ns (:last-render @state/*state)
         dt (- now-ns last-ns)
         dt-ms (/ dt 1e6)
         dt-s (/ dt 1e9)
 
-        {:keys [pan-speed-dt]} (:camera @*state)]
-    (swap! *state assoc :last-render now-ns)
+        {:keys [pan-speed-dt]} (:camera @state/*state)]
+    (swap! state/*state assoc :last-render now-ns)
 
     ;; input
     (let [;; panning via held keys - applied in pixel-offset space
           held @state/*keys-held
           ;; pixels per second
-          speed (-> @*state :player :speed)
+          speed (-> @state/*state :player :speed)
           move-speed (* speed dt-s)]
       ;;(println :dt dt :dt-ms dt-ms :dt-s dt-s :pan-speed-dt pan-speed-dt)
       (when (seq held)
-        (swap! *state update :player
+        (swap! state/*state update :player
           (fn [player]
             (let [[px py] (:pos player)
                   dx (cond
@@ -136,7 +133,7 @@
               (assoc player :pos [(+ px dx) (+ py dy)])))))
 
       ;; bounds checking
-      (swap! *state
+      (swap! state/*state
         (fn [state]
           (let [grid (:grid state)
                 clamp-fn (partial grid/clamp grid)]
@@ -153,19 +150,19 @@
                 ;; for camera later
                 rx (input/right-stick-x state)
                 ry (input/right-stick-y state)]
-            (swap! *state update :player
+            (swap! state/*state update :player
               (fn [player]
                 (let [[px py] (:pos player)
                       dx (* lx move-speed)
                       dy (* ly move-speed)]
                   (assoc player :pos [(+ px dx) (+ py dy)]))))
             (cond
-              (input/dpad-up state)    (swap! *state assoc :tactical-mode :aggressive)
-              (input/dpad-down state)  (swap! *state assoc :tactical-mode :defensive)
-              (input/dpad-left state)  (swap! *state assoc :tactical-mode :flank)
-              (input/dpad-right state) (swap! *state assoc :tactical-mode :hold))))))
+              (input/dpad-up state)    (swap! state/*state assoc :tactical-mode :aggressive)
+              (input/dpad-down state)  (swap! state/*state assoc :tactical-mode :defensive)
+              (input/dpad-left state)  (swap! state/*state assoc :tactical-mode :flank)
+              (input/dpad-right state) (swap! state/*state assoc :tactical-mode :hold))))))
 
-    (swap! *state
+    (swap! state/*state
       (fn [state]
         (let [allies (:allies state)
               [px py] (:pos (:player state))
@@ -315,7 +312,7 @@
                       ally))))
               allies)))))
 
-    (swap! *state
+    (swap! state/*state
       (fn [state]
         (let [[px py] (:pos (:player state))
               grid (:grid state)]
@@ -340,50 +337,50 @@
                 (:enemies state))))))
 
     (let [{:keys [player allies enemies]}
-          (combat/process-combat (:player @*state) (:allies @*state) (:enemies @*state) dt-s)]
-      (swap! *state assoc :player player :allies allies :enemies enemies))
+          (combat/process-combat (:player @state/*state) (:allies @state/*state) (:enemies @state/*state) dt-s)]
+      (swap! state/*state assoc :player player :allies allies :enemies enemies))
 
     ;; smoothly zoom
-    (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
+    (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @state/*state)]
       (when (and zoom-mouse (not= zoom target-zoom))
         (let [lerp-speed 0.15  ;; 15% of remaining distance per frame
               new-zoom (+ zoom (* (- target-zoom zoom) lerp-speed))
               ;; snap if close enough
               new-zoom (if (< (abs (- new-zoom target-zoom)) 0.001) target-zoom
                          new-zoom)]
-          (swap! *state assoc-in [:camera :zoom] new-zoom))))
+          (swap! state/*state assoc-in [:camera :zoom] new-zoom))))
 
     ;; Center camera on player
-    (let [[px py] (:pos (:player @*state))
+    (let [[px py] (:pos (:player @state/*state))
           scale (:scale ctx)
           {screen-w :width screen-h :height} size
-          tile-size-px (* config/default-tile-size (:zoom (:camera @*state))
+          tile-size-px (* config/default-tile-size (:zoom (:camera @state/*state))
                          scale)
           ;; offset so player tile center is at screen center
           target-ox (- (/ screen-w 2) (* (+ px 0.5) tile-size-px))
           target-oy (- (/ screen-h 2) (* (+ py 0.5) tile-size-px))]
-      (swap! *state update :camera assoc :offset-x target-ox :offset-y target-oy))
+      (swap! state/*state update :camera assoc :offset-x target-ox :offset-y target-oy))
 
-    (let [{:keys [offset-x offset-y zoom]} (:camera @*state)
+    (let [{:keys [offset-x offset-y zoom]} (:camera @state/*state)
           scale (:scale ctx)
           tile-size    (* config/default-tile-size zoom)
           tile-size-px (* tile-size scale) ;; actual pixels (retina)
           {screen-w :width screen-h :height} size
-          grid         (:grid @*state)]
+          grid         (:grid @state/*state)]
 
       ;; tick
       (when (> dt-ms tick-ms)
-        (tick (some->> @*state :producing (mapv #(quot % tile-size-px)))))
+        (tick (some->> @state/*state :producing (mapv #(quot % tile-size-px)))))
 
       ;; spawn timer
-      (when (and (> (:hp (:player @*state)) 0)
-              (< (count (:enemies @*state)) 100))
-        (let [timer (- (:spawn-timer @*state) dt-s)]
+      (when (and (> (:hp (:player @state/*state)) 0)
+              (< (count (:enemies @state/*state)) 100))
+        (let [timer (- (:spawn-timer @state/*state) dt-s)]
           (if (<= timer 0)
-            (let [pos (random-edge-pos (:grid @*state))]
-              (swap! *state assoc :spawn-timer (:spawn-interval @*state))
-              (swap! *state update :enemies conj (peep/make-enemy pos)))
-            (swap! *state assoc :spawn-timer timer))))
+            (let [pos (random-edge-pos (:grid @state/*state))]
+              (swap! state/*state assoc :spawn-timer (:spawn-interval @state/*state))
+              (swap! state/*state update :enemies conj (peep/make-enemy pos)))
+            (swap! state/*state assoc :spawn-timer timer))))
 
       ;; render
       (canvas/clear canvas 0xFF1A1A2E)
@@ -394,7 +391,7 @@
 
         ;; calculate visible tile range from camera state
         (let [{:keys [min-x min-y max-x max-y]}
-              (camera/visible-tiles (:camera @*state) screen-w screen-h scale)
+              (camera/visible-tiles (:camera @state/*state) screen-w screen-h scale)
               min-x (max 0 min-x)
               min-y (max 0 min-y)
               max-x (min (:width grid) max-x)
@@ -414,7 +411,7 @@
           (doseq [y (range min-y (inc max-y))]
             (canvas/draw-line canvas (util/point min-x y) (util/point max-x y) paint))
 
-          (let [player (:player @*state)
+          (let [player (:player @state/*state)
                 [px py] (:pos player)]
             (draw-hit player (Color4f. 0.9 0.2 0.2 1.0))  ;; red
             (let [death-timer (:death-timer player 0)
@@ -425,7 +422,7 @@
               (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) radius paint))
             (draw-hp-bar canvas paint px py (:hp player) (:max-hp player)))
 
-          (doseq [ally (:allies @*state)]
+          (doseq [ally (:allies @state/*state)]
             (let [[ax ay] (:pos ally)
                   path (:path ally)]
               (draw-hit ally (Color4f. 0.3 0.5 0.9 1.0))  ;; light blue
@@ -454,7 +451,7 @@
 
           ,)
 
-        (doseq [enemy (:enemies @*state)]
+        (doseq [enemy (:enemies @state/*state)]
           (let [[ex ey] (:pos enemy)
                 path (:path enemy)]
             (draw-hit enemy (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
@@ -481,27 +478,27 @@
 (defn on-event [ctx evt]
   (println (pr-str evt))
   (when (= :mouse-scroll (:event evt))
-    (let [{:keys [zoom target-zoom zoom-speed min-zoom max-zoom]} (:camera @*state)
+    (let [{:keys [zoom target-zoom zoom-speed min-zoom max-zoom]} (:camera @state/*state)
           scroll (Math/signum ^double (:delta-y evt))
           new-target (utils/clamp (+ (or target-zoom zoom) (* scroll zoom-speed)) min-zoom max-zoom)]
-      (swap! *state assoc-in [:camera :target-zoom] new-target)
-      (swap! *state assoc-in [:camera :zoom-mouse] [(:x evt) (:y evt)])))
+      (swap! state/*state assoc-in [:camera :target-zoom] new-target)
+      (swap! state/*state assoc-in [:camera :zoom-mouse] [(:x evt) (:y evt)])))
   #_
   (when (= :key (:event evt))
     (condp contains? key
-      #{:w :up}    (swap! *state update-in [:camera :offset-y] - 1)
-      #{:s :down}  (swap! *state update-in [:camera :offset-y] + 1)
-      #{:a :left}  (swap! *state update-in [:camera :offset-x] - 1)
-      #{:d :right} (swap! *state update-in [:camera :offset-x] + 1))
+      #{:w :up}    (swap! state/*state update-in [:camera :offset-y] - 1)
+      #{:s :down}  (swap! state/*state update-in [:camera :offset-y] + 1)
+      #{:a :left}  (swap! state/*state update-in [:camera :offset-x] - 1)
+      #{:d :right} (swap! state/*state update-in [:camera :offset-x] + 1))
     (case (:key evt)
-      :w (swap! *state update-in [:camera :offset-y] - 1)
-      :s (swap! *state update-in [:camera :offset-y] + 1)
-      :a (swap! *state update-in [:camera :offset-x] - 1)
-      :d (swap! *state update-in [:camera :offset-x] + 1)
-      :up (swap! *state update-in [:camera :offset-y] - 1)
-      :down (swap! *state update-in [:camera :offset-y] + 1)
-      :left (swap! *state update-in [:camera :offset-x] - 1)
-      :right (swap! *state update-in [:camera :offset-x] + 1)
+      :w (swap! state/*state update-in [:camera :offset-y] - 1)
+      :s (swap! state/*state update-in [:camera :offset-y] + 1)
+      :a (swap! state/*state update-in [:camera :offset-x] - 1)
+      :d (swap! state/*state update-in [:camera :offset-x] + 1)
+      :up (swap! state/*state update-in [:camera :offset-y] - 1)
+      :down (swap! state/*state update-in [:camera :offset-y] + 1)
+      :left (swap! state/*state update-in [:camera :offset-x] - 1)
+      :right (swap! state/*state update-in [:camera :offset-x] + 1)
       nil))
   ,)
 
@@ -513,10 +510,10 @@
     {:on-key-down (fn [e]
                     (swap! state/*keys-held conj (:key e))
                     (case (:key e)
-                      :digit1 (swap! *state assoc :tactical-mode :aggressive)
-                      :digit2 (swap! *state assoc :tactical-mode :defensive)
-                      :digit3 (swap! *state assoc :tactical-mode :hold)
-                      :digit4 (swap! *state assoc :tactical-mode :flank)
+                      :digit1 (swap! state/*state assoc :tactical-mode :aggressive)
+                      :digit2 (swap! state/*state assoc :tactical-mode :defensive)
+                      :digit3 (swap! state/*state assoc :tactical-mode :hold)
+                      :digit4 (swap! state/*state assoc :tactical-mode :flank)
                       nil))
      :on-key-up   (fn [e]
                     (swap! state/*keys-held disj (:key e)))}
@@ -525,8 +522,8 @@
       :on-event #'on-event}]]
    [ui/padding {:padding 5}
     [ui/align {:x :right :y :bottom}
-     [ui/label (str (-> @*state :camera ((juxt :offset-x :offset-y))))]]]
+     [ui/label (str (-> @state/*state :camera ((juxt :offset-x :offset-y))))]]]
    [ui/padding {:padding 5}
     [ui/align {:x :right :y :top}
      [ui/label {:font-weight :bold}
-      (str "Mode: " (name (:tactical-mode @*state)))]]]])
+      (str "Mode: " (name (:tactical-mode @state/*state)))]]]])

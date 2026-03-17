@@ -16,7 +16,7 @@
     [ui/center
      [ui/label {:font-weight :bold} "MECHSTAIN"]]
     [ui/button {:on-click (fn [_]
-                            (reset! render/*state (render/init-state))
+                            (reset! state/*state (render/init-state))
                             (reset! *score {:kills 0 :time 0})
                             (reset! *screen :playing))}
      "Start"]

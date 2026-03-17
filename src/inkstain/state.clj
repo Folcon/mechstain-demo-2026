@@ -1,4 +1,5 @@
-(ns inkstain.state)
+(ns inkstain.state
+  (:require [io.github.humbleui.ui :as ui]))
 
 
 
@@ -8,7 +9,7 @@
 
 (defonce *window (promise))
 (defonce *mode (atom :editor))
-(defonce *state (atom {}))
+(defonce *state (ui/signal nil))
 (defonce *ui-tree (atom nil))
 
 (defonce *debug-state
