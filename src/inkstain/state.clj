@@ -7,6 +7,7 @@
   (dec (swap! *next-id inc)))
 
 (defonce *window (promise))
+(defonce *mode (atom :editor))
 (defonce *state (atom {}))
 (defonce *ui-tree (atom nil))
 

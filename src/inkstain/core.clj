@@ -6,6 +6,7 @@
 
    [inkstain.config :as config]
    [inkstain.state :as state]
+   [inkstain.game :as game]
 
 
    [examples.7guis-converter]
@@ -90,8 +91,9 @@
 (restore-durable-signal *example)
 
 (def examples
-  [["Game"
-    [["Tactical" render/ui]]]
+  [["Mechstain"
+    [["Game" game/game-root]
+     ["Tactical" render/ui]]]
    ["Documented"
     docs/examples]
    ["Components"
@@ -179,16 +181,23 @@
           [ui/gap {:height 10}]
           [ui/padding {:horizontal 20}
            [ui/button {:on-click (fn [_] (reset! *profiling? true))} "Profile"]]
+          [ui/gap {:height 10}]
+          [ui/padding {:horizontal 20}
+           [ui/button {:on-click (fn [_] (reset! state/*mode :game))} "Game"]]
           [ui/gap {:height 10}]]]]
        [ui/clip
         [ui/profile {:value *profiling?}
          [(examples-map @*example)]]]])))
 
+(ui/defcomp root []
+  (case @state/*mode
+    :editor [app-impl]
+    :game   [game/game-root]))
+
 (defonce *app
   (atom nil))
 
-(reset! *app
-  app-impl)
+(reset! *app root)
 
 (defn maybe-save-window-rect [window event]
   (when (#{:window-move :window-resize} (:event event))
