@@ -4,6 +4,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
 
+   [inkstain.config :as config]
    [inkstain.state :as state]
 
 
@@ -87,9 +88,6 @@
   (ui/signal "DevTools"))
 
 (restore-durable-signal *example)
-
-(defonce *window
-  (promise))
 
 (def examples
   [["Game"
@@ -216,20 +214,22 @@
 
 (defn -main [& args]
   (ui/start-app!
-    (deliver *window
+    (deliver state/*window
       (ui/window
         (merge
-          {:title    "Inkstain 👋"
+          {:title    (str config/version-string "👋")
            :mac-icon "dev/imgs/icon.icns"
            :screen   (:id (first (app/screens)))
-           :width    800
-           :height   800
+           ;; TODO: Doesn't look like it's picking up the new size, check!
+           :width    (first config/init-window-size)  ;; 800
+           :height   (second config/init-window-size) ;; 800
            :x        :center
            :y        :center
-           :on-event #'maybe-save-window-rect}
+           :on-event #'maybe-save-window-rect
+           :exit-on-close? (if config/debug? false true)}
           (restore-window-rect))
         *app)))
-  @*window)
+  @state/*window)
 
 (comment
   (do

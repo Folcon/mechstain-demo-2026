@@ -6,6 +6,7 @@
 (defn next-id []
   (dec (swap! *next-id inc)))
 
+(defonce *window (promise))
 (defonce *state (atom {}))
 (defonce *ui-tree (atom nil))
 
