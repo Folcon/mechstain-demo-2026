@@ -184,7 +184,9 @@
 
                              :else
                              (assoc ally :repath-timer (max 0 timer)))]
-                  (movement/step-movement ally dt-s)))
+                  (if (combat/alive? ally)
+                    (movement/step-movement ally dt-s)
+                    ally)))
               allies)))))
 
     (swap! *state
@@ -204,7 +206,9 @@
                                       :state (if path :moving :idle)
                                       :repath-timer 1.5))
                                   (assoc enemy :repath-timer timer))]
-                      (movement/step-movement enemy dt-s)))
+                      (if (combat/alive? enemy)
+                        (movement/step-movement enemy dt-s)
+                        enemy)))
                 (:enemies state))))))
 
     (let [{:keys [player allies enemies]}
