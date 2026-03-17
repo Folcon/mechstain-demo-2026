@@ -152,55 +152,57 @@
           (assoc state :allies
             (mapv
               (fn [ally]
-                (let [[ax ay] (:pos ally)
-                      player-dist (Math/sqrt (+ (Math/pow (- px ax) 2) (Math/pow (- py ay) 2)))
-                      [tx ty] (or (:last-target ally) [px py])
-                      player-moved-dist (Math/sqrt (+ (Math/pow (- px tx) 2) (Math/pow (- py ty) 2)))
-                      timer (- (or (:repath-timer ally) 0) dt-s)
+                (if (not (combat/alive? ally))
+                  ally  ;; dead/dying - don't touch
+                  (let [[ax ay] (:pos ally)
+                        player-dist (Math/sqrt (+ (Math/pow (- px ax) 2) (Math/pow (- py ay) 2)))
+                        [tx ty] (or (:last-target ally) [px py])
+                        player-moved-dist (Math/sqrt (+ (Math/pow (- px tx) 2) (Math/pow (- py ty) 2)))
+                        timer (- (or (:repath-timer ally) 0) dt-s)
 
-                      nearest-enemy (combat/find-nearest-hostile [ax ay]
-                                      (filter combat/alive? (:enemies state)))
-                      enemy-dist (when nearest-enemy
-                                   (combat/distance [ax ay] (:pos nearest-enemy)))
-                      melee-range? (and enemy-dist (<= enemy-dist (:attack-range ally 1.5)))
+                        nearest-enemy (combat/find-nearest-hostile [ax ay]
+                                        (filter combat/alive? (:enemies state)))
+                        enemy-dist (when nearest-enemy
+                                     (combat/distance [ax ay] (:pos nearest-enemy)))
+                        melee-range? (and enemy-dist (<= enemy-dist (:attack-range ally 1.5)))
 
-                      ;; detection range
-                      enemy-nearby? (and enemy-dist (<= enemy-dist 8.0))
+                        ;; detection range
+                        enemy-nearby? (and enemy-dist (<= enemy-dist 8.0))
 
-                      ally (cond
-                             melee-range?
-                             (assoc ally :state :idle :path [])  ;; stop and fight
+                        ally (cond
+                               melee-range?
+                               (assoc ally :state :idle :path [])  ;; stop and fight
 
-                             ;; enemy nearby - chase it
-                             (and enemy-nearby? (<= timer 0))
-                             (let [[ex ey] (:pos nearest-enemy)
-                                   path (pathfinding/try-search grid
-                                          [(Math/round (double ax)) (Math/round (double ay))]
-                                          [(Math/round (double ex)) (Math/round (double ey))])]
-                               (assoc ally
-                                 :path (vec (or path []))
-                                 :state (if path :moving :idle)
-                                 :repath-timer 0.5))
+                               ;; enemy nearby - chase it
+                               (and enemy-nearby? (<= timer 0))
+                               (let [[ex ey] (:pos nearest-enemy)
+                                     path (pathfinding/try-search grid
+                                            [(Math/round (double ax)) (Math/round (double ay))]
+                                            [(Math/round (double ex)) (Math/round (double ey))])]
+                                 (assoc ally
+                                   :path (vec (or path []))
+                                   :state (if path :moving :idle)
+                                   :repath-timer 0.5))
 
-                             (or
-                               ;; repath toward player with offset
-                               (and (> player-dist 3.0) (<= timer 0))
-                               ;; repath towards player who's moved
-                               (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                             (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
-                                   ty (+ (Math/round ^double py) (- (rand-int 3) 1))
-                                   path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
-                               (assoc ally
-                                 :path (vec (or path []))
-                                 :state (if path :moving :idle)
-                                 :repath-timer 0.75
-                                 :last-target [px py]))
+                               (or
+                                 ;; repath toward player with offset
+                                 (and (> player-dist 3.0) (<= timer 0))
+                                 ;; repath towards player who's moved
+                                 (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
+                               (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
+                                     ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                                     path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
+                                 (assoc ally
+                                   :path (vec (or path []))
+                                   :state (if path :moving :idle)
+                                   :repath-timer 0.75
+                                   :last-target [px py]))
 
-                             :else
-                             (assoc ally :repath-timer (max 0 timer)))]
-                  (if (combat/alive? ally)
-                    (movement/step-movement ally dt-s)
-                    ally)))
+                               :else
+                               (assoc ally :repath-timer (max 0 timer)))]
+                    (if (combat/alive? ally)
+                      (movement/step-movement ally dt-s)
+                      ally))))
               allies)))))
 
     (swap! *state
@@ -209,20 +211,22 @@
               grid (:grid state)]
           (assoc state :enemies
             (mapv (fn [enemy]
-                    (let [[ex ey] (:pos enemy)
-                          timer (- (or (:repath-timer enemy) 0) dt-s)
-                          enemy (if (<= timer 0)
-                                  (let [path (pathfinding/try-search grid
-                                               [(Math/round ^double ex) (Math/round ^double ey)]
-                                               [(Math/round ^double px) (Math/round ^double py)])]
-                                    (assoc enemy
-                                      :path (vec (or path []))
-                                      :state (if path :moving :idle)
-                                      :repath-timer 1.5))
-                                  (assoc enemy :repath-timer timer))]
-                      (if (combat/alive? enemy)
-                        (movement/step-movement enemy dt-s)
-                        enemy)))
+                    (if (not (combat/alive? enemy))
+                      enemy  ;; dead/dying - don't touch
+                      (let [[ex ey] (:pos enemy)
+                            timer (- (or (:repath-timer enemy) 0) dt-s)
+                            enemy (if (<= timer 0)
+                                    (let [path (pathfinding/try-search grid
+                                                 [(Math/round ^double ex) (Math/round ^double ey)]
+                                                 [(Math/round ^double px) (Math/round ^double py)])]
+                                      (assoc enemy
+                                        :path (vec (or path []))
+                                        :state (if path :moving :idle)
+                                        :repath-timer 1.5))
+                                    (assoc enemy :repath-timer timer))]
+                        (if (combat/alive? enemy)
+                          (movement/step-movement enemy dt-s)
+                          enemy))))
                 (:enemies state))))))
 
     (let [{:keys [player allies enemies]}
