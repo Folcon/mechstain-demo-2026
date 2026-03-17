@@ -3,12 +3,20 @@
 
 
 
-(def controller-manager
-  (doto (ControllerManager.)
-    (.initSDLGamepad)))
+;; must be on the same thread
+(def controller-manager (atom nil))
+
+(defn ensure-init! []
+  (when-not @controller-manager
+    (let [mgr (ControllerManager.)]
+      (.initSDLGamepad mgr)
+      (reset! controller-manager mgr))))
 
 (defn get-state [index]
-  (.getState ^ControllerManager controller-manager index))
+  (ensure-init!)
+  (let [mgr ^ControllerManager @controller-manager]
+    (.update mgr)  ;; pump SDL events, detects connect/disconnect
+    (.getState mgr index)))
 
 (defn connected? [controller-state]
   (.-isConnected ^ControllerState controller-state))
