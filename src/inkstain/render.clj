@@ -132,6 +132,16 @@
                        :else 0)]
               (assoc player :pos [(+ px dx) (+ py dy)])))))
 
+      ;; bounds checking
+      (swap! *state
+        (fn [state]
+          (let [grid (:grid state)
+                clamp-fn (partial grid/clamp grid)]
+            (-> state
+              (update-in [:player :pos] clamp-fn)
+              (assoc :allies (mapv (fn [ally] (update ally :pos clamp-fn)) (:allies state)))
+              (assoc :enemies (mapv (fn [enemy] (update enemy :pos clamp-fn)) (:enemies state)))))))
+
       ;; Poll each frame in on-paint
       (let [^ControllerState state (input/get-state 0)]
         (when (input/connected? state)
