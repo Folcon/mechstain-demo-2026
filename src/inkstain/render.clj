@@ -10,6 +10,7 @@
    [inkstain.state :as state]
    [inkstain.systems.grid :as grid]
    [inkstain.camera :as camera]
+   [inkstain.peep :as peep]
    [inkstain.utils :as utils])
   (:import
    [io.github.humbleui.skija Color4f Paint]
@@ -24,7 +25,8 @@
   (ui/signal
     {:last-render (System/nanoTime)
      :camera      (camera/create-camera)
-     :grid        (grid/scatter-water (grid/make-grid 300 200) 20)}))
+     :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
+     :player      (peep/make-player [5 5])}))
 
 (defn lch->rgb ^Color4f [c]
   (-> c
@@ -115,6 +117,13 @@
             (canvas/draw-line canvas (util/point x min-y) (util/point x max-y) paint))
           (doseq [y (range min-y (inc max-y))]
             (canvas/draw-line canvas (util/point min-x y) (util/point max-x y) paint))
+
+          (let [player (:player @*state)
+                [px py] (:pos player)]
+            (.setColor4f paint (Color4f. 0.9 0.2 0.2 1.0))  ;; red
+            ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
+            (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) 0.4 paint))
+
           ,)))
 
     ;; draw entities on top
