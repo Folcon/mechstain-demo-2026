@@ -160,13 +160,27 @@
 
                       nearest-enemy (combat/find-nearest-hostile [ax ay]
                                       (filter combat/alive? (:enemies state)))
-                      in-combat? (and nearest-enemy
-                                   (<= (combat/distance [ax ay] (:pos nearest-enemy))
-                                     (:attack-range ally 1.5)))
+                      enemy-dist (when nearest-enemy
+                                   (combat/distance [ax ay] (:pos nearest-enemy)))
+                      melee-range? (and enemy-dist (<= enemy-dist (:attack-range ally 1.5)))
+
+                      ;; detection range
+                      enemy-nearby? (and enemy-dist (<= enemy-dist 8.0))
 
                       ally (cond
-                             in-combat?
+                             melee-range?
                              (assoc ally :state :idle :path [])  ;; stop and fight
+
+                             ;; enemy nearby - chase it
+                             (and enemy-nearby? (<= timer 0))
+                             (let [[ex ey] (:pos nearest-enemy)
+                                   path (pathfinding/try-search grid
+                                          [(Math/round (double ax)) (Math/round (double ay))]
+                                          [(Math/round (double ex)) (Math/round (double ey))])]
+                               (assoc ally
+                                 :path (vec (or path []))
+                                 :state (if path :moving :idle)
+                                 :repath-timer 0.5))
 
                              (or
                                ;; repath toward player with offset
