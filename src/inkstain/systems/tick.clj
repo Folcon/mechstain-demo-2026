@@ -245,3 +245,12 @@
             (assoc :spawn-timer (:spawn-interval state))
             (update :enemies conj (peep/make-enemy pos))))
         (assoc state :spawn-timer timer)))))
+
+(defn tick [state {:keys [held controller dt]}]
+  (-> state
+    (tick-player-input {:keys [held controller dt]})
+    (tick-ally-movement dt)
+    (tick-enemy-movement dt)
+    (tick-bounds-check)
+    (tick-combat dt)
+    (tick-spawning dt)))

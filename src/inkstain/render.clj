@@ -67,23 +67,17 @@
   (let [;; timing
         now-ns (System/nanoTime)
         last-ns (:last-render @state/*state)
-        dt (/ (- now-ns last-ns) 1e9)
-        held @state/*keys-held
-        controller (when-let [^ControllerState cs (input/get-state 0)]
-                     (when (input/connected? cs)
-                       cs))]
+        dt (/ (- now-ns last-ns) 1e9)]
     (swap! state/*state assoc :last-render now-ns)
 
-    ;; input
-    (tick/tick-player-input state/*state {:held held :controller controller :dt dt})
-
-    (tick/tick-ally-movement dt)
-
-    (tick/tick-enemy-movement dt)
-
-    (tick/tick-bounds-check state/*state)
-
-    (tick/tick-combat dt)
+    ;; one tick, one swap
+    (when (= :playing @state/*screen)
+      (let [held @state/*keys-held
+            ;; Poll each frame in on-paint
+            controller (when-let [^ControllerState cs (input/get-state 0)]
+                         (when (input/connected? cs)
+                           cs))]
+        (swap! state/*state tick/tick {:held held :controller controller :dt dt})))
 
     ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @state/*state)]
@@ -112,9 +106,6 @@
           tile-size-px (* tile-size scale) ;; actual pixels (retina)
           {screen-w :width screen-h :height} size
           grid         (:grid @state/*state)]
-
-      ;; spawn timer
-      (tick/tick-spawning dt)
 
       ;; render
       (canvas/clear canvas 0xFF1A1A2E)
