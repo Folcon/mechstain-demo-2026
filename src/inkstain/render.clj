@@ -32,7 +32,12 @@
      :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
      :player      (peep/make-player [5 5])
      :allies      (vec (for [_i (range 5)]
-                         (peep/make-peep [(+ 4 (rand-int 3)) (+ 4 (rand-int 3))] :ally)))}))
+                         (peep/make-peep [(+ 4 (rand-int 3)) (+ 4 (rand-int 3))] :ally)))
+
+     :enemies []
+     :spawn-timer 0.0
+     :spawn-interval 3.0
+     ,}))
 
 (defn lch->rgb ^Color4f [c]
   (-> c
@@ -41,6 +46,16 @@
 
 (def ^Paint paint
   (ui/paint {:fill "0F0"}))
+
+(defn random-edge-pos [grid]
+  (let [{:keys [width height]} grid
+        edge (rand-int 4)]
+    (case edge
+      0 [(rand-int width) 0]            ;; top
+      1 [(rand-int width) (dec height)] ;; bottom
+      2 [0 (rand-int height)]           ;; left
+      3 [(dec width) (rand-int height)] ;; right
+      ,)))
 
 (defn tick [[x y]])
 
@@ -121,6 +136,26 @@
                   (movement/step-movement ally dt-s)))
               allies)))))
 
+    (swap! *state
+      (fn [state]
+        (let [[px py] (:pos (:player state))
+              grid (:grid state)]
+          (assoc state :enemies
+            (mapv (fn [enemy]
+                    (let [[ex ey] (:pos enemy)
+                          timer (- (or (:repath-timer enemy) 0) dt-s)
+                          enemy (if (<= timer 0)
+                                  (let [path (pathfinding/try-search grid
+                                               [(Math/round ^double ex) (Math/round ^double ey)]
+                                               [(Math/round ^double px) (Math/round ^double py)])]
+                                    (assoc enemy
+                                      :path (vec (or path []))
+                                      :state (if path :moving :idle)
+                                      :repath-timer 1.5))
+                                  (assoc enemy :repath-timer timer))]
+                      (movement/step-movement enemy dt-s)))
+                (:enemies state))))))
+
     ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
       (when (and zoom-mouse (not= zoom target-zoom))
@@ -152,6 +187,14 @@
       ;; tick
       (when (> dt-ms tick-ms)
         (tick (some->> @*state :producing (mapv #(quot % tile-size-px)))))
+
+      ;; spawn timer
+      (let [timer (- (:spawn-timer @*state) dt-s)]
+        (if (<= timer 0)
+          (let [pos (random-edge-pos (:grid @*state))]
+            (swap! *state assoc :spawn-timer (:spawn-interval @*state))
+            (swap! *state update :enemies conj (peep/make-enemy pos)))
+          (swap! *state assoc :spawn-timer timer)))
 
       ;; render
       (canvas/clear canvas 0xFF1A1A2E)
@@ -212,7 +255,22 @@
 
           ,)))
 
-    ;; draw entities on top
+    (doseq [enemy (:enemies @*state)]
+      (let [[ex ey] (:pos enemy)
+            path (:path enemy)]
+        (.setColor4f paint (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
+        (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) 0.4 paint)
+        ;; path debug
+        (when (seq path)
+          (.setColor4f paint (Color4f. 1.0 0.2 0.2 0.5))  ;; red, semi-transparent
+          (let [[fx fy] (first path)]
+            (canvas/draw-line canvas
+              (util/point (+ ex 0.5) (+ ey 0.5))
+              (util/point (+ fx 0.5) (+ fy 0.5)) paint))
+          (doseq [[[x1 y1] [x2 y2]] (partition 2 1 path)]
+            (canvas/draw-line canvas
+              (util/point (+ x1 0.5) (+ y1 0.5))
+              (util/point (+ x2 0.5) (+ y2 0.5)) paint)))))
 
     (window/request-frame (:window ctx))))
 
