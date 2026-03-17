@@ -10,9 +10,11 @@
    [inkstain.state :as state]
    [inkstain.systems.grid :as grid]
    [inkstain.camera :as camera]
+   [inkstain.input :as input]
    [inkstain.peep :as peep]
    [inkstain.utils :as utils])
   (:import
+   [com.studiohartman.jamepad ControllerState]
    [io.github.humbleui.skija Color4f Paint]
    [java.util Arrays]))
 
@@ -68,7 +70,21 @@
                        (or (held :w) (held :up)) (- move-speed)
                        (or (held :s) (held :down)) move-speed
                        :else 0)]
-              (assoc player :pos [(+ px dx) (+ py dy)]))))))
+              (assoc player :pos [(+ px dx) (+ py dy)])))))
+
+      ;; Poll each frame in on-paint
+      (let [^ControllerState state (input/get-state 0)]
+        (when (input/connected? state)
+          (let [lx (input/left-stick-x state)      ;; -1.0 to 1.0
+                ly (input/left-stick-y state)      ;; -1.0 to 1.0
+                rx (input/right-stick-x state)     ;; for camera later
+                ry (input/right-stick-y state)]
+            (swap! *state update :player
+              (fn [player]
+                (let [[px py] (:pos player)
+                      dx (* lx move-speed)
+                      dy (* ly move-speed)]
+                  (assoc player :pos [(+ px dx) (+ py dy)]))))))))
 
     ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
