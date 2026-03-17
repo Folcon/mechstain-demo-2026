@@ -32,3 +32,15 @@
 
 (defn right-stick-y [controller-state]
   (.rightStickY ^ControllerState controller-state))
+
+(defn dpad-up [controller-state]
+  (.-dpadUpJustPressed ^ControllerState controller-state))
+
+(defn dpad-down [controller-state]
+  (.-dpadDownJustPressed ^ControllerState controller-state))
+
+(defn dpad-left [controller-state]
+  (.-dpadLeftJustPressed ^ControllerState controller-state))
+
+(defn dpad-right [controller-state]
+  (.-dpadRightJustPressed ^ControllerState controller-state))

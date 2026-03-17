@@ -38,6 +38,8 @@
      :enemies []
      :spawn-timer 0.0
      :spawn-interval 3.0
+
+     :tactical-mode :aggressive
      ,}))
 
 (defn lch->rgb ^Color4f [c]
@@ -73,8 +75,8 @@
       (let [[x y] (first (filter (fn [[x y]] (grid/walkable? grid x y))
                            (for [_ (range 10)]
                              (let [a (* (rand) 2.0 Math/PI)]
-                               [(max 0 (min (dec width) (int (+ px (* radius) (Math/cos a)))))
-                                (max 0 (min (dec height) (int (+ py (* radius) (Math/sin a)))))]))))]
+                               [(max 0 (min (dec width) (int (+ px (* radius (Math/cos a))))))
+                                (max 0 (min (dec height) (int (+ py (* radius (Math/sin a))))))]))))]
         (or (when (and x y) [x y])
           [(int px) (int py)])))))
 
@@ -142,7 +144,12 @@
                 (let [[px py] (:pos player)
                       dx (* lx move-speed)
                       dy (* ly move-speed)]
-                  (assoc player :pos [(+ px dx) (+ py dy)]))))))))
+                  (assoc player :pos [(+ px dx) (+ py dy)]))))
+            (cond
+              (input/dpad-up state)    (swap! *state assoc :tactical-mode :aggressive)
+              (input/dpad-down state)  (swap! *state assoc :tactical-mode :defensive)
+              (input/dpad-left state)  (swap! *state assoc :tactical-mode :flank)
+              (input/dpad-right state) (swap! *state assoc :tactical-mode :hold))))))
 
     (swap! *state
       (fn [state]
@@ -155,9 +162,9 @@
                 (if (not (combat/alive? ally))
                   ally  ;; dead/dying - don't touch
                   (let [[ax ay] (:pos ally)
-                        player-dist (Math/sqrt (+ (Math/pow (- px ax) 2) (Math/pow (- py ay) 2)))
+                        player-dist (combat/distance [px py] [ax ay])
                         [tx ty] (or (:last-target ally) [px py])
-                        player-moved-dist (Math/sqrt (+ (Math/pow (- px tx) 2) (Math/pow (- py ty) 2)))
+                        player-moved-dist (combat/distance [px py] [tx ty])
                         timer (- (or (:repath-timer ally) 0) dt-s)
 
                         nearest-enemy (combat/find-nearest-hostile [ax ay]
@@ -169,37 +176,109 @@
                         ;; detection range
                         enemy-nearby? (and enemy-dist (<= enemy-dist 8.0))
 
-                        ally (cond
-                               melee-range?
-                               (assoc ally :state :idle :path [])  ;; stop and fight
+                        ally (case (-> state :tactical-mode)
+                               :aggressive
+                               (cond
+                                 melee-range?
+                                 (assoc ally :state :idle :path [])  ;; stop and fight
 
-                               ;; enemy nearby - chase it
-                               (and enemy-nearby? (<= timer 0))
-                               (let [[ex ey] (:pos nearest-enemy)
-                                     path (pathfinding/try-search grid
-                                            [(Math/round (double ax)) (Math/round (double ay))]
-                                            [(Math/round (double ex)) (Math/round (double ey))])]
-                                 (assoc ally
-                                   :path (vec (or path []))
-                                   :state (if path :moving :idle)
-                                   :repath-timer 0.5))
+                                 ;; enemy nearby - chase it
+                                 (and enemy-nearby? (<= timer 0))
+                                 (let [[ex ey] (:pos nearest-enemy)
+                                       path (pathfinding/try-search grid
+                                              [(Math/round (double ax)) (Math/round (double ay))]
+                                              [(Math/round (double ex)) (Math/round (double ey))])]
+                                   (assoc ally
+                                     :path (vec (or path []))
+                                     :state (if path :moving :idle)
+                                     :repath-timer 0.5))
 
-                               (or
-                                 ;; repath toward player with offset
-                                 (and (> player-dist 3.0) (<= timer 0))
-                                 ;; repath towards player who's moved
-                                 (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                               (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
-                                     ty (+ (Math/round ^double py) (- (rand-int 3) 1))
-                                     path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
-                                 (assoc ally
-                                   :path (vec (or path []))
-                                   :state (if path :moving :idle)
-                                   :repath-timer 0.75
-                                   :last-target [px py]))
+                                 (or
+                                   ;; repath toward player with offset
+                                   (and (> player-dist 3.0) (<= timer 0))
+                                   ;; repath towards player who's moved
+                                   (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
+                                 (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
+                                       ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                                       path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
+                                   (assoc ally
+                                     :path (vec (or path []))
+                                     :state (if path :moving :idle)
+                                     :repath-timer 0.75
+                                     :last-target [px py]))
 
-                               :else
-                               (assoc ally :repath-timer (max 0 timer)))]
+                                 :else
+                                 (assoc ally :repath-timer (max 0 timer)))
+
+                               :defensive
+                               (let [ally-to-player (combat/distance [ax ay] [px py])
+                                     enemy-near-player? (and nearest-enemy
+                                                          (<= (combat/distance [px py] (:pos nearest-enemy))
+                                                            3.0))]
+                                 (cond
+                                   ;; in melee range - fight
+                                   melee-range? (assoc ally :state :idle :path [])
+                                   ;; enemy near player - intercept
+                                   (and enemy-near-player? (<= timer 0))
+                                   (let [[ex ey] (:pos nearest-enemy)
+                                         path (pathfinding/try-search grid
+                                                [(Math/round ^double ax) (Math/round ^double ay)]
+                                                [(Math/round ^double ex) (Math/round ^double ey)])]
+                                     (assoc ally
+                                       :path (vec (or path []))
+                                       :state (if path :moving :idle)
+                                       :repath-timer 0.5
+                                       :last-target [ex ey]))
+                                   ;; too far from player - return
+                                   (and (> ally-to-player 3.0) (<= timer 0))
+                                   ;; pathfind back to player
+                                   (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
+                                         ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                                         path (pathfinding/try-search grid
+                                                [(Math/round ^double ax) (Math/round ^double ay)]
+                                                [tx ty])]
+                                     (assoc ally
+                                       :path (vec (or path []))
+                                       :state (if path :moving :idle)
+                                       :repath-timer 0.75
+                                       :last-target [px py]))
+                                   :else (assoc ally :repath-timer (max 0 timer))))
+
+                               :hold
+                               (if melee-range?
+                                 (assoc ally :state :idle :path [])
+                                 (assoc ally :state :idle :path [] :repath-timer (max 0 timer)))
+
+                               :flank
+                               (cond
+                                 melee-range? (assoc ally :state :idle :path [])
+
+                                 (and enemy-nearby? (<= timer 0))
+                                 (let [[ex ey] (:pos nearest-enemy)
+                                       ;; point on opposite side of enemy from player
+                                       dx (- ex px) dy (- ey py)
+                                       dist (Math/sqrt (+ (* dx dx) (* dy dy)))
+                                       ;; normalize and extend 2 tiles past enemy
+                                       flank-x (+ ex (* (/ dx (max dist 0.1)) 2.0))
+                                       flank-y (+ ey (* (/ dy (max dist 0.1)) 2.0))
+                                       ;; clamp to grid
+                                       fx (max 0 (min (dec (:width grid)) (Math/round ^double flank-x)))
+                                       fy (max 0 (min (dec (:height grid)) (Math/round ^double flank-y)))
+                                       path (pathfinding/try-search grid
+                                              [(Math/round (double ax)) (Math/round (double ay))]
+                                              [fx fy])]
+                                   (assoc ally :path (vec (or path [])) :state (if path :moving :idle)
+                                     :repath-timer 0.75))
+                                 :else
+                                 ;; no enemy — follow player
+                                 (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
+                                       ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                                       path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
+                                   (assoc ally
+                                     :path (vec (or path []))
+                                     :state (if path :moving :idle)
+                                     :repath-timer 0.75
+                                     :last-target [px py]))))]
                     (if (combat/alive? ally)
                       (movement/step-movement ally dt-s)
                       ally))))
@@ -399,11 +478,22 @@
   [ui/stack
    [ui/key-listener
     {:on-key-down (fn [e]
-                    (swap! state/*keys-held conj (:key e)))
+                    (swap! state/*keys-held conj (:key e))
+                    (case (:key e)
+                      :digit1 (swap! *state assoc :tactical-mode :aggressive)
+                      :digit2 (swap! *state assoc :tactical-mode :defensive)
+                      :digit3 (swap! *state assoc :tactical-mode :hold)
+                      :digit4 (swap! *state assoc :tactical-mode :flank)
+                      nil))
      :on-key-up   (fn [e]
                     (swap! state/*keys-held disj (:key e)))}
     [ui/canvas
      {:on-paint #'on-paint
       :on-event #'on-event}]]
    [ui/padding {:padding 5}
-    [ui/label (str (-> @*state :camera ((juxt :offset-x :offset-y))))]]])
+    [ui/align {:x :right :y :bottom}
+     [ui/label (str (-> @*state :camera ((juxt :offset-x :offset-y))))]]]
+   [ui/padding {:padding 5}
+    [ui/align {:x :right :y :top}
+     [ui/label {:font-weight :bold}
+      (str "Mode: " (name (:tactical-mode @*state)))]]]])
