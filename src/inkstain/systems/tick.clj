@@ -17,7 +17,6 @@
         ;; pixels per second
         speed (-> @state/*state :player :speed)
         move-speed (* speed dt-s)]
-    ;;(println :dt dt :dt-ms dt-ms :dt-s dt-s :pan-speed-dt pan-speed-dt)
     (when (seq held)
       (swap! state/*state update :player
         (fn [player]

@@ -71,9 +71,7 @@
         last-ns (:last-render @state/*state)
         dt (- now-ns last-ns)
         dt-ms (/ dt 1e6)
-        dt-s (/ dt 1e9)
-
-        {:keys [pan-speed-dt]} (:camera @state/*state)]
+        dt-s (/ dt 1e9)]
     (swap! state/*state assoc :last-render now-ns)
 
     ;; input
