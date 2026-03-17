@@ -42,7 +42,7 @@
 (defn random-edge-pos [grid]
   (let [{:keys [width height]} grid
         edge (rand-int 4)]
-    (case edge
+    (case (int edge)
       0 [(rand-int width) 0]            ;; top
       1 [(rand-int width) (dec height)] ;; bottom
       2 [0 (rand-int height)]           ;; left
