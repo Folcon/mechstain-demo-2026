@@ -4,5 +4,4 @@
 /.idea
 .state
 .repl-port
-.lein-env
 /checkouts
