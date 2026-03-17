@@ -66,6 +66,16 @@
               (held :left)  (update :offset-x + pan-speed)
               (held :right) (update :offset-x - pan-speed))))))
 
+    (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
+      (when (and zoom-mouse (not= zoom target-zoom))
+        (let [lerp-speed 0.15  ;; 15% of remaining distance per frame
+              new-zoom (+ zoom (* (- target-zoom zoom) lerp-speed))
+              ;; snap if close enough
+              new-zoom (if (< (abs (- new-zoom target-zoom)) 0.001) target-zoom
+                         new-zoom)
+              [mx my] zoom-mouse]
+          (swap! *state update :camera camera/apply-zoom zoom mx my new-zoom))))
+
     (let [{:keys [offset-x offset-y zoom]} (:camera @*state)
           scale (:scale ctx)
           tile-size    (* config/default-tile-size zoom)
@@ -86,7 +96,7 @@
 
         ;; calculate visible tile range from camera state
         (let [{:keys [min-x min-y max-x max-y]}
-              (camera/visible-tiles (:camera @*state) screen-w screen-h)
+              (camera/visible-tiles (:camera @*state) screen-w screen-h scale)
               min-x (max 0 min-x)
               min-y (max 0 min-y)
               max-x (min (:width grid) max-x)
@@ -113,6 +123,12 @@
 
 (defn on-event [ctx evt]
   (println (pr-str evt))
+  (when (= :mouse-scroll (:event evt))
+    (let [{:keys [zoom target-zoom zoom-speed min-zoom max-zoom]} (:camera @*state)
+          scroll (Math/signum ^double (:delta-y evt))
+          new-target (utils/clamp (+ (or target-zoom zoom) (* scroll zoom-speed)) min-zoom max-zoom)]
+      (swap! *state assoc-in [:camera :target-zoom] new-target)
+      (swap! *state assoc-in [:camera :zoom-mouse] [(:x evt) (:y evt)])))
   #_
   (when (= :key (:event evt))
     (condp contains? key
@@ -139,12 +155,7 @@
                     (swap! state/*keys-held conj (:key e)))
      :on-key-up   (fn [e]
                     (swap! state/*keys-held disj (:key e)))}
-    [ui/mouse-listener
-     {:on-scroll (fn [e]
-                   (let [{:keys [zoom zoom-speed min-zoom max-zoom offset-x offset-y]} (:camera @*state)
-                         new-zoom (utils/clamp (+ zoom (* (:delta-y e) zoom-speed)) min-zoom max-zoom)]
-                     (swap! *state update :camera camera/apply-zoom zoom (:x e) (:y e) new-zoom)))}
-     [ui/canvas
-      {:on-paint #'on-paint
-       :on-event #'on-event}]]]
+    [ui/canvas
+     {:on-paint #'on-paint
+      :on-event #'on-event}]]
    [ui/label (str (-> @*state :camera ((juxt :offset-x :offset-y))))]])

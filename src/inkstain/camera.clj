@@ -61,9 +61,9 @@
 
 (defn visible-tiles
   "Calculate which tiles are visible on screen"
-  [camera-state screen-width screen-height]
+  [camera-state screen-width screen-height scale]
   (let [{:keys [zoom offset-x offset-y]} camera-state
-        tile-size (* config/default-tile-size zoom)
+        tile-size (* config/default-tile-size zoom scale)
         ;; Add margin for partially visible tiles
         margin 2
         min-x (- (int (Math/floor (/ (- offset-x) tile-size))) margin)
