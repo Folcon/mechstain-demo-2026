@@ -27,7 +27,10 @@
   17)
 
 (def *state
-  (ui/signal
+  (ui/signal nil))
+
+(defn init-state []
+  (reset! *state
     {:last-render (System/nanoTime)
      :camera      (camera/create-camera)
      :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
@@ -501,6 +504,8 @@
       :right (swap! *state update-in [:camera :offset-x] + 1)
       nil))
   ,)
+
+(init-state)
 
 (ui/defcomp ui []
   [ui/stack
