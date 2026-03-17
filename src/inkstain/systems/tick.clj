@@ -11,24 +11,25 @@
 
 
 
-(defn tick-player-input [dt]
-  (let [;; panning via held keys - applied in pixel-offset space
-        held @state/*keys-held
-        ;; pixels per second
-        speed (-> @state/*state :player :speed)
-        move-speed (* speed dt)]
+(defn tick-player-input [*state held dt]
+  (let [;; pixels per second
+        speed (-> @*state :player :speed)
+        move-speed (* speed dt)
+
+        ;; keyboard
+        ;; panning via held keys - applied in pixel-offset space
+        dx (cond
+             (or (held :a) (held :left)) (- move-speed)
+             (or (held :d) (held :right)) move-speed
+             :else 0)
+        dy (cond
+             (or (held :w) (held :up)) (- move-speed)
+             (or (held :s) (held :down)) move-speed
+             :else 0)]
     (when (seq held)
-      (swap! state/*state update :player
+      (swap! *state update :player
         (fn [player]
-          (let [[px py] (:pos player)
-                dx (cond
-                     (or (held :a) (held :left)) (- move-speed)
-                     (or (held :d) (held :right)) move-speed
-                     :else 0)
-                dy (cond
-                     (or (held :w) (held :up)) (- move-speed)
-                     (or (held :s) (held :down)) move-speed
-                     :else 0)]
+          (let [[px py] (:pos player)]
             (assoc player :pos [(+ px dx) (+ py dy)])))))
 
     ;; bounds checking

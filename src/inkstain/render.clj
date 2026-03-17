@@ -65,11 +65,12 @@
   (let [;; timing
         now-ns (System/nanoTime)
         last-ns (:last-render @state/*state)
-        dt (/ (- now-ns last-ns) 1e9)]
+        dt (/ (- now-ns last-ns) 1e9)
+        held @state/*keys-held]
     (swap! state/*state assoc :last-render now-ns)
 
     ;; input
-    (tick/tick-player-input dt)
+    (tick/tick-player-input state/*state held dt)
 
     (tick/tick-ally-movement dt)
 
