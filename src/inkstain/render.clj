@@ -12,9 +12,7 @@
    [inkstain.peep :as peep]
    [inkstain.utils :as utils])
   (:import
-   [com.studiohartman.jamepad ControllerState]
-   [io.github.humbleui.skija Color4f Paint]
-   [java.util Arrays]))
+   [io.github.humbleui.skija Color4f Paint]))
 
 
 
