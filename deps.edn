@@ -33,6 +33,7 @@
   {:git/url "https://github.com/HumbleUI/HumbleUI"
    :sha     "89d7ab0fffdd2f013f066a3bd766f0a7254412dc"
    :exclusions [io.github.humbleui/types]}
+  com.badlogicgames.jamepad/jamepad    {:mvn/version "2.30.0.0"}
   ubergraph/ubergraph                  {:mvn/version "0.8.2"}
   hiccup/hiccup                        {:mvn/version "1.0.5"}
   guru.nidi/graphviz-java              {:mvn/version "0.18.1"}
