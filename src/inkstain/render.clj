@@ -18,9 +18,6 @@
 
 
 
-(def tick-ms
-  17)
-
 (defn init-state []
   (reset! state/*state
     {:last-render (System/nanoTime)
