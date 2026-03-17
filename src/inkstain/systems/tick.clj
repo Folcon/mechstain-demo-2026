@@ -11,12 +11,12 @@
 
 
 
-(defn tick-player-input [dt-s]
+(defn tick-player-input [dt]
   (let [;; panning via held keys - applied in pixel-offset space
         held @state/*keys-held
         ;; pixels per second
         speed (-> @state/*state :player :speed)
-        move-speed (* speed dt-s)]
+        move-speed (* speed dt)]
     (when (seq held)
       (swap! state/*state update :player
         (fn [player]
@@ -61,7 +61,7 @@
             (input/dpad-left state)  (swap! state/*state assoc :tactical-mode :flank)
             (input/dpad-right state) (swap! state/*state assoc :tactical-mode :hold)))))))
 
-(defn tick-ally-movement [dt-s]
+(defn tick-ally-movement [dt]
   (swap! state/*state
     (fn [state]
       (let [allies (:allies state)
@@ -76,7 +76,7 @@
                       player-dist (combat/distance [px py] [ax ay])
                       [tx ty] (or (:last-target ally) [px py])
                       player-moved-dist (combat/distance [px py] [tx ty])
-                      timer (- (or (:repath-timer ally) 0) dt-s)
+                      timer (- (or (:repath-timer ally) 0) dt)
 
                       nearest-enemy (combat/find-nearest-hostile [ax ay]
                                       (filter combat/alive? (:enemies state)))
@@ -208,11 +208,11 @@
                                      :last-target [px py]))
                                  :else (assoc ally :repath-timer (max 0 timer)))))]
                   (if (combat/alive? ally)
-                    (movement/step-movement ally dt-s)
+                    (movement/step-movement ally dt)
                     ally))))
             allies))))))
 
-(defn tick-enemy-movement [dt-s]
+(defn tick-enemy-movement [dt]
   (swap! state/*state
     (fn [state]
       (let [[px py] (:pos (:player state))
@@ -222,7 +222,7 @@
                   (if (not (combat/alive? enemy))
                     enemy  ;; dead/dying - don't touch
                     (let [[ex ey] (:pos enemy)
-                          timer (- (or (:repath-timer enemy) 0) dt-s)
+                          timer (- (or (:repath-timer enemy) 0) dt)
                           enemy (if (<= timer 0)
                                   (let [path (pathfinding/try-search grid
                                                [(Math/round ^double ex) (Math/round ^double ey)]
@@ -233,19 +233,19 @@
                                       :repath-timer 1.5))
                                   (assoc enemy :repath-timer timer))]
                       (if (combat/alive? enemy)
-                        (movement/step-movement enemy dt-s)
+                        (movement/step-movement enemy dt)
                         enemy))))
             (:enemies state)))))))
 
-(defn tick-combat [dt-s]
+(defn tick-combat [dt]
   (let [{:keys [player allies enemies]}
-        (combat/process-combat (:player @state/*state) (:allies @state/*state) (:enemies @state/*state) dt-s)]
+        (combat/process-combat (:player @state/*state) (:allies @state/*state) (:enemies @state/*state) dt)]
     (swap! state/*state assoc :player player :allies allies :enemies enemies)))
 
-(defn tick-spawning [dt-s]
+(defn tick-spawning [dt]
   (when (and (> (:hp (:player @state/*state)) 0)
           (< (count (:enemies @state/*state)) 100))
-    (let [timer (- (:spawn-timer @state/*state) dt-s)]
+    (let [timer (- (:spawn-timer @state/*state) dt)]
       (if (<= timer 0)
         (let [pos (grid/random-edge-pos (:grid @state/*state))]
           (swap! state/*state assoc :spawn-timer (:spawn-interval @state/*state))

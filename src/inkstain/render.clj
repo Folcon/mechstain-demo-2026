@@ -43,8 +43,6 @@
 (def ^Paint paint
   (ui/paint {:fill "0F0"}))
 
-(defn tick [[x y]])
-
 (defn draw-hp-bar [canvas paint x y hp max-hp]
   (let [bar-width 0.8
         bar-height 0.08
@@ -67,19 +65,17 @@
   (let [;; timing
         now-ns (System/nanoTime)
         last-ns (:last-render @state/*state)
-        dt (- now-ns last-ns)
-        dt-ms (/ dt 1e6)
-        dt-s (/ dt 1e9)]
+        dt (/ (- now-ns last-ns) 1e9)]
     (swap! state/*state assoc :last-render now-ns)
 
     ;; input
-    (tick/tick-player-input dt-s)
+    (tick/tick-player-input dt)
 
-    (tick/tick-ally-movement dt-s)
+    (tick/tick-ally-movement dt)
 
-    (tick/tick-enemy-movement dt-s)
+    (tick/tick-enemy-movement dt)
 
-    (tick/tick-combat dt-s)
+    (tick/tick-combat dt)
 
     ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @state/*state)]
@@ -109,12 +105,8 @@
           {screen-w :width screen-h :height} size
           grid         (:grid @state/*state)]
 
-      ;; tick
-      (when (> dt-ms tick-ms)
-        (tick (some->> @state/*state :producing (mapv #(quot % tile-size-px)))))
-
       ;; spawn timer
-      (tick/tick-spawning dt-s)
+      (tick/tick-spawning dt)
 
       ;; render
       (canvas/clear canvas 0xFF1A1A2E)
