@@ -89,10 +89,10 @@
         bar-y (- y 0.15)
         hp-frac (max 0 (/ (double hp) max-hp))]
     ;; background (dark)
-    (.setColor4f paint (Color4f. 0.2 0.2 0.2 0.8))
+    (.setColor4f ^Paint paint (Color4f. 0.2 0.2 0.2 0.8))
     (canvas/draw-rect canvas (util/rect-xywh bar-x bar-y bar-width bar-height) paint)
     ;; health portion (green → red)
-    (.setColor4f paint (Color4f. (float (- 1.0 hp-frac)) (float hp-frac) 0.1 0.9))
+    (.setColor4f ^Paint paint (Color4f. (float (- 1.0 hp-frac)) (float hp-frac) 0.1 0.9))
     (canvas/draw-rect canvas (util/rect-xywh bar-x bar-y (* bar-width hp-frac) bar-height) paint)))
 
 (defn draw-hit [entity normal-colour]
