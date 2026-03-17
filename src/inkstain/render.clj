@@ -57,6 +57,7 @@
       3 [(dec width) (rand-int height)] ;; right
       ,)))
 
+      [x y]
 (defn tick [[x y]])
 
 (defn on-paint [ctx canvas size]
@@ -253,24 +254,24 @@
                     (util/point (+ x2 0.5) (+ y2 0.5))
                     paint)))))
 
-          ,)))
+          ,)
 
-    (doseq [enemy (:enemies @*state)]
-      (let [[ex ey] (:pos enemy)
-            path (:path enemy)]
-        (.setColor4f paint (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
-        (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) 0.4 paint)
-        ;; path debug
-        (when (seq path)
-          (.setColor4f paint (Color4f. 1.0 0.2 0.2 0.5))  ;; red, semi-transparent
-          (let [[fx fy] (first path)]
-            (canvas/draw-line canvas
-              (util/point (+ ex 0.5) (+ ey 0.5))
-              (util/point (+ fx 0.5) (+ fy 0.5)) paint))
-          (doseq [[[x1 y1] [x2 y2]] (partition 2 1 path)]
-            (canvas/draw-line canvas
-              (util/point (+ x1 0.5) (+ y1 0.5))
-              (util/point (+ x2 0.5) (+ y2 0.5)) paint)))))
+        (doseq [enemy (:enemies @*state)]
+          (let [[ex ey] (:pos enemy)
+                path (:path enemy)]
+            (.setColor4f paint (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
+            (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) 0.4 paint)
+            ;; path debug
+            (when (seq path)
+              (.setColor4f paint (Color4f. 1.0 0.2 0.2 0.5))  ;; red, semi-transparent
+              (let [[fx fy] (first path)]
+                (canvas/draw-line canvas
+                  (util/point (+ ex 0.5) (+ ey 0.5))
+                  (util/point (+ fx 0.5) (+ fy 0.5)) paint))
+              (doseq [[[x1 y1] [x2 y2]] (partition 2 1 path)]
+                (canvas/draw-line canvas
+                  (util/point (+ x1 0.5) (+ y1 0.5))
+                  (util/point (+ x2 0.5) (+ y2 0.5)) paint)))))))
 
     (window/request-frame (:window ctx))))
 
