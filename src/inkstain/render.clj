@@ -158,4 +158,5 @@
     [ui/canvas
      {:on-paint #'on-paint
       :on-event #'on-event}]]
-   [ui/label (str (-> @*state :camera ((juxt :offset-x :offset-y))))]])
+   [ui/padding {:padding 5}
+    [ui/label (str (-> @*state :camera ((juxt :offset-x :offset-y))))]]])
