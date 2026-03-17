@@ -1,4 +1,5 @@
-(ns inkstain.systems.grid)
+(ns inkstain.systems.grid
+  (:require [inkstain.utils :as utils]))
 
 
 
@@ -7,6 +8,10 @@
   {:width width :height height
    :terrain (vec (repeat (* width height) :soil))
    :walkable (vec (repeat (* width height) true))})
+
+(defn clamp [grid [x y]]
+  [(utils/clamp x 0 (dec (:width grid)))
+   (utils/clamp y 0 (dec (:height grid)))])
 
 (defn cell-idx [x y width]
   (+ x (* y width)))
