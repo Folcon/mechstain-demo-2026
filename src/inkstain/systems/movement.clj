@@ -46,7 +46,7 @@
                    (:facing peep :south)
                    (facing-from-delta dx dy))
           job-type (get-in peep [:job :type])
-          urgency (get job-locomotion job-type :jog)
+          urgency (get job-locomotion job-type :run)
           speed (* (:speed peep) (get locomotion-speed urgency 1.0))
           [new-x new-y arrived?] (move-toward [px py] [nx ny] speed dt)]
       (if arrived?
