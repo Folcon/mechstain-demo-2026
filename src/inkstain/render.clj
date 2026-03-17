@@ -57,7 +57,26 @@
       3 [(dec width) (rand-int height)] ;; right
       ,)))
 
+(defn random-spawn-pos [player-pos grid]
+  (let [[px py] player-pos
+        {:keys [width height]} grid
+        radius 20
+        angle (* (rand) 2.0 Math/PI)
+        x (int (+ px (* radius (Math/cos angle))))
+        y (int (+ py (* radius (Math/sin angle))))
+        x (max 0 (min (dec width) x))
+        y (max 0 (min (dec height) y))]
+    (if (grid/walkable? grid x y)
       [x y]
+      ;; fallback: try a few more times
+      (let [[x y] (first (filter (fn [[x y]] (grid/walkable? grid x y))
+                           (for [_ (range 10)]
+                             (let [a (* (rand) 2.0 Math/PI)]
+                               [(max 0 (min (dec width) (int (+ px (* radius) (Math/cos a)))))
+                                (max 0 (min (dec height) (int (+ py (* radius) (Math/sin a)))))]))))]
+        (or (when (and x y) [x y])
+          [(int px) (int py)])))))
+
 (defn tick [[x y]])
 
 (defn on-paint [ctx canvas size]
