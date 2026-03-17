@@ -1,8 +1,8 @@
-# Fruit Economy
+# Mechstain
 
 This page is for a **very alpha** prototype which is still **actively** in development.
 
-Fruit Economy is something I'm fiddling around with to play with the ideas of an evolving world where:
+Mechstain is something I'm fiddling around with to play with the ideas of an evolving world where:
 
 - There is minimal direct combat
 - There's space for non-standard races
@@ -97,11 +97,11 @@ TODO: Look at:
 - [Run GitHub Actions locally](https://github.com/nektos/act)
 
 # Store Links
-- [itch.io](https://folcon.itch.io/fruit-economy), it may be 👻(hidden 😉).
+- [itch.io](https://folcon.itch.io/mechstain-7drl-2026), it may be 👻(hidden 😉).
 
 ## License
 
-Copyright © 2022 Folcon
+Copyright © 2026 Folcon
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at
