@@ -53,30 +53,43 @@
     (let [;; panning via held keys - applied in pixel-offset space
           held @state/*keys-held
           ;; pixels per second
-          pan-speed (* pan-speed-dt dt-s)]
+          speed (-> @*state :player :speed)
+          move-speed (* speed dt-s)]
       ;;(println :dt dt :dt-ms dt-ms :dt-s dt-s :pan-speed-dt pan-speed-dt)
       (when (seq held)
-        (swap! *state update :camera
-          (fn [cam]
-            (cond-> cam
-              (held :w)     (update :offset-y + pan-speed)
-              (held :s)     (update :offset-y - pan-speed)
-              (held :a)     (update :offset-x + pan-speed)
-              (held :d)     (update :offset-x - pan-speed)
-              (held :up)    (update :offset-y + pan-speed)
-              (held :down)  (update :offset-y - pan-speed)
-              (held :left)  (update :offset-x + pan-speed)
-              (held :right) (update :offset-x - pan-speed))))))
+        (swap! *state update :player
+          (fn [player]
+            (let [[px py] (:pos player)
+                  dx (cond
+                       (or (held :a) (held :left)) (- move-speed)
+                       (or (held :d) (held :right)) move-speed
+                       :else 0)
+                  dy (cond
+                       (or (held :w) (held :up)) (- move-speed)
+                       (or (held :s) (held :down)) move-speed
+                       :else 0)]
+              (assoc player :pos [(+ px dx) (+ py dy)]))))))
 
+    ;; smoothly zoom
     (let [{:keys [zoom target-zoom zoom-mouse]} (:camera @*state)]
       (when (and zoom-mouse (not= zoom target-zoom))
         (let [lerp-speed 0.15  ;; 15% of remaining distance per frame
               new-zoom (+ zoom (* (- target-zoom zoom) lerp-speed))
               ;; snap if close enough
               new-zoom (if (< (abs (- new-zoom target-zoom)) 0.001) target-zoom
-                         new-zoom)
-              [mx my] zoom-mouse]
-          (swap! *state update :camera camera/apply-zoom zoom mx my new-zoom))))
+                         new-zoom)]
+          (swap! *state assoc-in [:camera :zoom] new-zoom))))
+
+    ;; Center camera on player
+    (let [[px py] (:pos (:player @*state))
+          scale (:scale ctx)
+          {screen-w :width screen-h :height} size
+          tile-size-px (* config/default-tile-size (:zoom (:camera @*state))
+                         scale)
+          ;; offset so player tile center is at screen center
+          target-ox (- (/ screen-w 2) (* (+ px 0.5) tile-size-px))
+          target-oy (- (/ screen-h 2) (* (+ py 0.5) tile-size-px))]
+      (swap! *state update :camera assoc :offset-x target-ox :offset-y target-oy))
 
     (let [{:keys [offset-x offset-y zoom]} (:camera @*state)
           scale (:scale ctx)
