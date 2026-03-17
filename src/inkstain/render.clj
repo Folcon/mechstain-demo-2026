@@ -147,7 +147,8 @@
         (when (input/connected? state)
           (let [lx (input/left-stick-x state)      ;; -1.0 to 1.0
                 ly (input/left-stick-y state)      ;; -1.0 to 1.0
-                rx (input/right-stick-x state)     ;; for camera later
+                ;; for camera later
+                rx (input/right-stick-x state)
                 ry (input/right-stick-y state)]
             (swap! *state update :player
               (fn [player]
