@@ -1,5 +1,7 @@
 (ns inkstain.game
   (:require [io.github.humbleui.ui :as ui]
+            [inkstain.config :as config]
+            [inkstain.state :as state]
             [inkstain.fns :as fns]
             [inkstain.render :as render]))
 
@@ -21,6 +23,28 @@
     [ui/button {:on-click fns/maybe-quit}
      "Quit"]]])
 
+(ui/defcomp pause-screen []
+  [ui/stack
+   [render/ui]  ;; game still visible behind
+   [ui/rect {:paint {:fill 0x80000000}}  ;; dark overlay
+    [ui/center
+     [ui/column {:gap 20}
+      [ui/center
+       [ui/label {:font-weight :bold} "PAUSED"]]
+      [ui/button {:on-click (fn [_] (reset! *screen :playing))}
+       "Resume"]
+      [ui/button {:on-click (fn [_] (reset! *screen :menu))}
+       "Return to Menu"]]]]])
+
+(ui/defcomp death-screen []
+  [ui/center
+   [ui/column {:gap 20}
+    [ui/center
+     [ui/label {:font-weight :bold} "YOU DIED"]
+     [ui/label (str "Kills: " (:kills @*score))]]
+    [ui/button {:on-click (fn [_] (reset! *screen :menu))}
+     "Return to Menu"]]])
+
 
 (ui/defcomp game-root []
   [ui/key-listener
@@ -32,4 +56,6 @@
                        nil)))}
    (case @*screen
      :menu    [menu-screen]
-     :playing [render/ui])])
+     :playing [render/ui]
+     :paused  [pause-screen]
+     :dead    [death-screen])])
