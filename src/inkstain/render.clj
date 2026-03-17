@@ -189,9 +189,26 @@
             (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) 0.4 paint))
 
           (doseq [ally (:allies @*state)]
-            (let [[px py] (:pos ally)]
+            (let [[ax ay] (:pos ally)
+                  path (:path ally)]
               (.setColor4f paint (Color4f. 0.3 0.5 0.9 1.0))
-              (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) 0.4 paint)))
+              (canvas/draw-circle canvas (+ ax 0.5) (+ ay 0.5) 0.4 paint)
+
+              ;; draw debug pathfinding path
+              (when (seq path)
+                (.setColor4f paint (Color4f. 1.0 1.0 0.0 0.5))  ;; yellow, semi-transparent
+                ;; line from current pos to first waypoint
+                (let [[fx fy] (first path)]
+                  (canvas/draw-line canvas
+                    (util/point (+ ax 0.5) (+ ay 0.5))
+                    (util/point (+ fx 0.5) (+ fy 0.5))
+                    paint))
+                ;; line between waypoints
+                (doseq [[[x1 y1] [x2 y2]] (partition 2 1 path)]
+                  (canvas/draw-line canvas
+                    (util/point (+ x1 0.5) (+ y1 0.5))
+                    (util/point (+ x2 0.5) (+ y2 0.5))
+                    paint)))))
 
           ,)))
 
