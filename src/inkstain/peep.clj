@@ -7,8 +7,15 @@
   {:id (state/next-id)
    :pos pos              ;; grid position [x y]
 
+   :acceleration 12.0
+   :deceleration 12.0
    :max-speed 4.0        ;; tiles per second
+
    :speed 4.0            ;; tiles per second
+   :target-speed 0.0     ;; how fast do you want to go
+   :heading 0.0          ;; radians with 0 = east, pi/2 = south
+   :target-heading 0.0   ;; where do you want to be facing (nil = no turning)
+
    :hp 100
    :max-hp 100
 

@@ -38,10 +38,6 @@
         dx (+ dx-kb lx)
         dy (+ dy-kb ly)
         magnitude (Math/sqrt (+ (* dx dx) (* dy dy)))
-        [dx dy] (if (> magnitude speed)
-                  (let [ratio (/ speed magnitude)]
-                    [(* dx ratio) (* dy ratio)])
-                  [dx dy])
 
         tactical-mode (when controller
                         (cond
@@ -50,10 +46,23 @@
                           (input/dpad-left controller) :flank
                           (input/dpad-right controller) :hold))]
     (-> state
-      (update-in [:player :pos]
-        (fn [[px py]] [(+ px dx) (+ py dy)]))
+      (update :player
+        (fn [player]
+          (if (> magnitude 0.01)
+            ;; if input, set target heading and desired speed
+            (let [target-heading (Math/atan2 dy dx)
+                  ;; if analog stick, magnitude controls speed (0-1 range)
+                  speed-frac (min 1.0 magnitude)]
+              (assoc player
+                :target-heading target-heading
+                :target-speed (* max-speed speed-frac)))
+            ;; if no input, decelerate to stop
+            (assoc player :target-speed 0.0))))
       (cond->
         tactical-mode (assoc :tactical-mode tactical-mode)))))
+
+(defn tick-player-physics [state dt]
+  (update state :player movement/step-physics dt))
 
 (defn tick-bounds-check [state]
   (let [grid (:grid state)
@@ -272,6 +281,7 @@
   (-> state
     ;; current api for movement is decide movement and move them. should this change?
     (tick-player-input opts)
+    (tick-player-physics (:dt opts))
     (tick-ally-movement dt)
     (tick-enemy-movement dt)
     (tick-bounds-check)

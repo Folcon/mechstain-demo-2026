@@ -55,3 +55,43 @@
           (assoc peep :pos [new-x new-y] :path [] :state :idle :facing facing))
         (assoc peep :pos [new-x new-y] :facing facing)))
     peep))
+
+
+(defn normalise-angle
+  "normalise angle to [-pi, pi]"
+  [a]
+  (let [a (mod a (* 2 Math/PI))]
+    (if (> a Math/PI) (- a (* 2 Math/PI)) a)))
+
+(defn angle-diff [a b]
+  (normalise-angle (- b a)))
+
+(defn step-physics [{:keys [max-speed acceleration deceleration] :as entity} dt]
+  (let [speed (:speed entity 0.0)
+        heading (:heading entity 0.0)
+        target-speed (:target-speed entity 0.0)
+        target-heading (:target-heading entity heading)
+
+        ;; turn toward target heading
+        turn (angle-diff heading target-heading)
+        new-heading (normalise-angle (+ heading turn))
+
+        ;; accelerate
+        speed-diff (- target-speed speed)
+        accel (if (pos? speed-diff) acceleration deceleration)
+        max-speed-change (* accel dt)
+        new-speed (if (> (Math/abs ^double speed-diff) max-speed-change)
+                    (+ speed (* (Math/signum ^double speed-diff) max-speed-change))
+                    target-speed)
+        new-speed' (max 0.0 (min max-speed new-speed))
+
+        ;; update position from heading + speed
+        [px py] (:pos entity)
+        vx (* new-speed' (Math/cos new-heading))
+        vy (* new-speed' (Math/sin new-heading))
+        new-x (+ px (* vx dt))
+        new-y (+ py (* vy dt))]
+    (assoc entity
+      :pos [new-x new-y]
+      :heading new-heading
+      :speed new-speed)))
