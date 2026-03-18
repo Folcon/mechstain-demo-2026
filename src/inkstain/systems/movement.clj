@@ -87,9 +87,9 @@
     (Math/toRadians (+ (* (- 1.0 t) turn-rate-rest)
                       (* t turn-rate-speed)))))
 
-(defn step-physics [{:keys [max-speed acceleration deceleration] :as entity} dt]
+(defn step-physics [entity dt]
   (let [chassis-type (get entity :chassis :standard)
-        props (chassis-movement chassis-type)
+        {:keys [max-speed acceleration deceleration] :as props} (chassis-movement chassis-type)
 
         speed (:speed entity 0.0)
         heading (:heading entity 0.0)
