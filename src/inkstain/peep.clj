@@ -6,6 +6,8 @@
 (defn make-peep [pos faction]
   {:id (state/next-id)
    :pos pos              ;; grid position [x y]
+
+   :max-speed 4.0        ;; tiles per second
    :speed 4.0            ;; tiles per second
    :hp 100
    :max-hp 100
