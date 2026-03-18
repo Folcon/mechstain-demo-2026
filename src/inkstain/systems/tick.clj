@@ -13,17 +13,16 @@
 (defn tick-player-input [state {:keys [held controller dt]}]
   (let [;; pixels per second
         speed (-> state :player :speed)
-        move-speed (* speed dt)
 
         ;; keyboard
         ;; panning via held keys - applied in pixel-offset space
         dx-kb (cond
-                (or (held :a) (held :left)) (- move-speed)
-                (or (held :d) (held :right)) move-speed
+                (or (held :a) (held :left)) -1.0
+                (or (held :d) (held :right)) 1.0
                 :else 0)
         dy-kb (cond
-                (or (held :w) (held :up)) (- move-speed)
-                (or (held :s) (held :down)) move-speed
+                (or (held :w) (held :up))   -1.0
+                (or (held :s) (held :down))  1.0
                 :else 0)
 
         ;; controller
@@ -35,9 +34,14 @@
                          (input/right-stick-y controller)]
                         [0 0 0 0])
 
-        ;; TODO: Check if bug with keyboard + controller giving extra speed
-        dx (+ dx-kb (* lx move-speed))
-        dy (+ dy-kb (* ly move-speed))
+        ;; combine and clamp to unit length
+        dx (+ dx-kb lx)
+        dy (+ dy-kb ly)
+        magnitude (Math/sqrt (+ (* dx dx) (* dy dy)))
+        [dx dy] (if (> magnitude speed)
+                  (let [ratio (/ speed magnitude)]
+                    [(* dx ratio) (* dy ratio)])
+                  [dx dy])
 
         tactical-mode (when controller
                         (cond
@@ -266,6 +270,7 @@
 
 (defn tick [state {:keys [held controller dt] :as opts}]
   (-> state
+    ;; current api for movement is decide movement and move them. should this change?
     (tick-player-input opts)
     (tick-ally-movement dt)
     (tick-enemy-movement dt)
