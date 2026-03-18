@@ -57,6 +57,14 @@
     peep))
 
 
+(def chassis-movement
+  {:standard {:max-speed 4.0
+              :acceleration 12.0     ;; high = responsive
+              :deceleration 12.0
+              :turn-rate-rest 360    ;; degrees/sec, instant at rest
+              :turn-rate-speed 270   ;;   still good at speed
+              :turn-speed-threshold 1.0}})
+
 (defn normalise-angle
   "normalise angle to [-pi, pi]"
   [a]
@@ -66,14 +74,35 @@
 (defn angle-diff [a b]
   (normalise-angle (- b a)))
 
+(defn get-turn-rate
+  "turn rate in radians/sec based on current speed"
+  [chassis-props speed]
+  (let [{:keys [turn-rate-rest turn-rate-speed
+                turn-speed-threshold max-speed]} chassis-props
+        ;; lerp factor, 0 at rest, 1 at max speed
+        t (if (> max-speed turn-speed-threshold)
+            (min 1.0 (/ (max 0 (- speed turn-speed-threshold))
+                       (- max-speed turn-speed-threshold)))
+            0.0)]
+    (Math/toRadians (+ (* (- 1.0 t) turn-rate-rest)
+                      (* t turn-rate-speed)))))
+
 (defn step-physics [{:keys [max-speed acceleration deceleration] :as entity} dt]
-  (let [speed (:speed entity 0.0)
+  (let [chassis-type (get entity :chassis :standard)
+        props (chassis-movement chassis-type)
+
+        speed (:speed entity 0.0)
         heading (:heading entity 0.0)
         target-speed (:target-speed entity 0.0)
         target-heading (:target-heading entity heading)
 
         ;; turn toward target heading
-        turn (angle-diff heading target-heading)
+        max-turn (* (get-turn-rate props speed) dt)
+        diff (angle-diff heading target-heading)
+        turn (cond
+               (> (Math/abs ^double diff) max-turn)
+               (* (Math/signum ^double diff) max-turn)
+               :else diff)
         new-heading (normalise-angle (+ heading turn))
 
         ;; accelerate

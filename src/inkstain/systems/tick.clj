@@ -12,7 +12,7 @@
 
 (defn tick-player-input [state {:keys [held controller dt]}]
   (let [;; pixels per second
-        max-speed (-> state :player :max-speed)
+        max-speed (-> state :player :chassis movement/chassis-movement :max-speed)
 
         ;; keyboard
         ;; panning via held keys - applied in pixel-offset space

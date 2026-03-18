@@ -7,6 +7,7 @@
   {:id (state/next-id)
    :pos pos              ;; grid position [x y]
 
+   :chassis :standard    ;; :standard :charger :dash
    :acceleration 12.0
    :deceleration 12.0
    :max-speed 4.0        ;; tiles per second
