@@ -62,6 +62,16 @@
     (.setColor4f paint (Color4f. 1.0 1.0 1.0 1.0))  ;; white flash
     (.setColor4f paint normal-colour)))
 
+(defn draw-nose [canvas entity]
+  (let [[px py] (:pos entity)
+        heading (:heading entity 0)
+        hx (+ px 0.5 (* 0.5 (Math/cos heading)))
+        hy (+ py 0.5 (* 0.5 (Math/sin heading)))]
+    (.setColor4f paint (Color4f. 1.0 1.0 1.0 0.8))
+    (canvas/draw-line canvas
+      (util/point (+ px 0.5) (+ py 0.5))
+      (util/point hx hy) paint)))
+
 (defn on-paint [ctx canvas size]
   (let [;; timing
         now-ns (System/nanoTime)
@@ -144,6 +154,7 @@
                            0.4)]
               ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
               (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) radius paint))
+            (draw-nose canvas player)
             (draw-hp-bar canvas paint px py (:hp player) (:max-hp player)))
 
           (doseq [ally (:allies @state/*state)]
@@ -155,6 +166,7 @@
                              (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
                              0.4)]
                 (canvas/draw-circle canvas (+ ax 0.5) (+ ay 0.5) radius paint))
+              (draw-nose canvas ally)
               (draw-hp-bar canvas paint ax ay (:hp ally) (:max-hp ally))
 
               ;; draw debug pathfinding path
@@ -184,6 +196,7 @@
                            (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
                            0.4)]
               (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) radius paint))
+            (draw-nose canvas enemy)
             (draw-hp-bar canvas paint ex ey (:hp enemy) (:max-hp enemy))
             ;; path debug
             (when (seq path)
