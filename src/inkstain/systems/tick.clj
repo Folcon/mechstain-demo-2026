@@ -5,8 +5,7 @@
             [inkstain.input :as input]
             [inkstain.systems.pathfinding :as pathfinding]
             [inkstain.systems.movement :as movement]
-            [inkstain.systems.combat :as combat])
-  (:import [com.studiohartman.jamepad ControllerState]))
+            [inkstain.systems.combat :as combat]))
 
 
 
