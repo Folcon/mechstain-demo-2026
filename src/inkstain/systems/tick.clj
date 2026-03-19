@@ -62,8 +62,11 @@
       (cond->
         tactical-mode (assoc :tactical-mode tactical-mode)))))
 
-(defn tick-player-physics [state dt]
-  (update state :player movement/step-physics dt))
+(defn tick-physics [state dt]
+  (-> state
+    (update :player movement/step-physics dt)
+    (assoc :allies (mapv (fn [ent] (movement/step-physics ent dt)) (:allies state)))
+    (assoc :enemies (mapv (fn [ent] (movement/step-physics ent dt))  (:enemies state)))))
 
 (defn tick-bounds-check [state]
   (let [grid (:grid state)
@@ -282,9 +285,9 @@
   (-> state
     ;; current api for movement is decide movement and move them. should this change?
     (tick-player-input opts)
-    (tick-player-physics (:dt opts))
     (tick-ally-movement dt)
     (tick-enemy-movement dt)
+    (tick-physics dt)
     (tick-bounds-check)
     (tick-combat dt)
     (tick-score dt)
