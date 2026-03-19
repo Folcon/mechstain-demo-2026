@@ -32,7 +32,6 @@ prod-mac:
 	$$JAVA_HOME/bin/jpackage --name "Fruit Economy" \
 	--input ../target --main-jar fruit-economy-standalone.jar \
 	--main-class clojure.main --arguments -m --arguments fruit-economy.core \
-	--java-options -XstartOnFirstThread
 prod-win:
 	export JAVA_HOME=`/usr/libexec/java_home` && \
     	cd releases && \
