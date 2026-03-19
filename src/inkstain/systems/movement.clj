@@ -2,6 +2,13 @@
 
 
 
+(defn facing-from-delta
+  "determine facing direction from movement delta"
+  [dx dy]
+  (if (> (Math/abs (double dx)) (Math/abs (double dy)))
+    (if (pos? dx) :east :west)
+    (if (pos? dy) :north :south)))
+
 (def chassis-movement
   {;; peep not in a mech
    :infantry  {:max-speed 2.5
@@ -78,7 +85,12 @@
         vx (* new-speed' (Math/cos new-heading))
         vy (* new-speed' (Math/sin new-heading))
         new-x (+ px (* vx dt))
-        new-y (+ py (* vy dt))]
+        new-y (+ py (* vy dt))
+
+        ;; set facing for animation
+        facing (if (and (zero? dx) (zero? dy))
+                 (:facing peep :south)
+                 (facing-from-delta dx dy))]
     (assoc entity
       :pos [new-x new-y]
       :heading new-heading
@@ -111,26 +123,21 @@
          (+ y (* dy scale))
          false]))))
 
-(defn facing-from-delta
-  "determine facing direction from movement delta"
-  [dx dy]
-  (if (> (Math/abs (double dx)) (Math/abs (double dy)))
-    (if (pos? dx) :east :west)
-    (if (pos? dy) :north :south)))
-
 (defn step-movement [peep dt]
   (if (and (= (:state peep) :moving) (seq (:path peep)))
     (let [[next-node & remaining] (:path peep)
           [nx ny] next-node
           [px py] (:pos peep)
           dx (- nx px) dy (- ny py)
-          facing (if (and (zero? dx) (zero? dy))
-                   (:facing peep :south)
-                   (facing-from-delta dx dy))
           job-type (get-in peep [:job :type])
           urgency (get job-locomotion job-type :run)
           speed (* (:max-speed peep) (get locomotion-speed urgency 1.0))
-          [new-x new-y arrived?] (move-toward [px py] [nx ny] speed dt)]
+          [new-x new-y arrived?] (move-toward [px py] [nx ny] speed dt)
+
+          ;; set facing for animation
+          facing (if (and (zero? dx) (zero? dy))
+                   (:facing peep :south)
+                   (facing-from-delta dx dy))]
       (if arrived?
         (if (seq remaining)
           (assoc peep :pos [new-x new-y] :path (vec remaining) :facing facing)
