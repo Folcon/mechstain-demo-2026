@@ -270,7 +270,7 @@ jobs:
 
       - name: Upload artifact (macOS)
         if: always() && matrix.platform == 'macos'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
           path: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
@@ -278,7 +278,7 @@ jobs:
 
       - name: Upload artifact (Windows)
         if: always() && matrix.platform == 'windows'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}
           path: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}/
@@ -293,19 +293,19 @@ jobs:
 
       - name: Release artifact (Linux)
         if: matrix.platform == 'linux' && startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.6.1
         with:
           files: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
 
       - name: Release artifact (macOS)
         if: matrix.platform == 'macos' && startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.6.1
         with:
           files: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
 
       - name: Release artifact (Windows)
         if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.6.1
         with:
           files: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}.zip
 
