@@ -129,20 +129,45 @@
           [nx ny] next-node
           [px py] (:pos peep)
           dx (- nx px) dy (- ny py)
+          dist (Math/sqrt (+ (* dx dx) (* dy dy)))
 
-          target-heading (Math/atan2 dy dx)
-
-          job-type (get-in peep [:job :type])
-          ;; TODO: Add combat based urgency as well to flesh out combat
-          urgency (get job-locomotion job-type :run)
-          max-speed (or (-> peep :mech :chassis chassis-movement :max-speed)
-                      (:max-speed peep))
-          speed (* max-speed (get locomotion-speed urgency 1.0))
-          ;; clean up later
-          [_new-x _new-y arrived?] (move-toward [px py] [nx ny] speed dt)]
-      (if arrived?
+          ;; arrival threshold, scale with speed so fast units don't overshoot
+          speed (or (:speed peep) 0.0)
+          arrival-dist (max 0.5 (* speed dt 2))]
+      (if (<= dist arrival-dist)
+        ;; close enough so we pop this waypoint
         (if (seq remaining)
-          (assoc peep :target-speed speed :path (vec remaining) :target-heading target-heading)
-          (assoc peep :target-speed 0.0 :path [] :state :idle :target-heading target-heading))
-        (assoc peep :target-speed speed :target-heading target-heading)))
+          (let [[nnx nny] (first remaining)
+                new-heading (Math/atan2 (- nny py) (- nnx px))]
+            (assoc peep :path (vec remaining) :target-heading new-heading))
+          ;; last waypoint so we stop
+          (assoc peep :path [] :state :idle :target-speed 0.0))
+
+        ;; not there yet so aim at waypoint
+        (let [target-heading (Math/atan2 dy dx)
+
+              job-type (get-in peep [:job :type])
+              ;; TODO: Add combat based urgency as well to flesh out combat
+              urgency (get job-locomotion job-type :run)
+              max-speed (or (-> peep :mech :chassis chassis-movement :max-speed)
+                          (:max-speed peep))
+              effective-speed (* max-speed (get locomotion-speed urgency 1.0))
+
+              ;; check if we need to slow down
+              needs-slow? (if (empty? remaining)
+                            ;; last waypoint so we stop
+                            true
+                            ;; check angle to nnext waypoint
+                            (let [[nnx nny] (first remaining)
+                                  next-heading (Math/atan2 (- nny ny) (- nnx nx))
+                                  turn-angle (Math/abs (double (angle-diff target-heading next-heading)))]
+                              ;; slow down if turning more than ~45 degrees
+                              (> turn-angle (/ Math/PI 4))))
+
+              speed-frac (if needs-slow?
+                           (min 1.0 (/ dist 2.0))
+                           1.0)]
+          (assoc peep
+            :target-heading target-heading
+            :target-speed (* effective-speed speed-frac)))))
     peep))
