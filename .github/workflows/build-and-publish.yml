@@ -47,10 +47,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -61,7 +61,7 @@ jobs:
           cli: 'latest'
 
       - name: Cache Clojure dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.m2/repository
@@ -262,7 +262,7 @@ jobs:
       # ==================== Upload Artifacts ====================
       - name: Upload artifact (Linux)
         if: always() && matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
           path: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
@@ -270,7 +270,7 @@ jobs:
 
       - name: Upload artifact (macOS)
         if: always() && matrix.platform == 'macos'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
           path: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
@@ -278,7 +278,7 @@ jobs:
 
       - name: Upload artifact (Windows)
         if: always() && matrix.platform == 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}
           path: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}/
@@ -325,25 +325,25 @@ jobs:
           fi
 
       - name: Download Linux x86-64 artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_x86-64.deb
           path: .
 
       - name: Download macOS ARM64 artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-arm64.dmg
           path: .
 
       - name: Download macOS x86-64 artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-x86-64.dmg
           path: .
 
       - name: Download Windows x86-64 artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-x86-64
           path: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-x86-64
