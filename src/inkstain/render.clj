@@ -14,7 +14,8 @@
    [inkstain.utils :as utils])
   (:import
    [com.studiohartman.jamepad ControllerState]
-   [io.github.humbleui.skija Color4f Paint]))
+   [io.github.humbleui.skija Color4f Paint]
+   [io.github.humbleui.types Point]))
 
 
 
@@ -62,15 +63,30 @@
     (.setColor4f paint (Color4f. 1.0 1.0 1.0 1.0))  ;; white flash
     (.setColor4f paint normal-colour)))
 
-(defn draw-nose [canvas entity]
+(defn draw-nose [canvas entity paint color]
   (let [[px py] (:pos entity)
-        heading (:heading entity 0)
-        hx (+ px 0.5 (* 0.5 (Math/cos heading)))
-        hy (+ py 0.5 (* 0.5 (Math/sin heading)))]
-    (.setColor4f paint (Color4f. 1.0 1.0 1.0 0.8))
-    (canvas/draw-line canvas
-      (util/point (+ px 0.5) (+ py 0.5))
-      (util/point hx hy) paint)))
+        heading (or (:heading entity) 0)
+        cx (+ px 0.5) cy (+ py 0.5)
+        ;; front of nose
+        nose-x (+ cx (* 0.5 (Math/cos heading)))
+        nose-y (+ cy (* 0.5 (Math/sin heading)))
+        ;; two rear points
+        back-x (- cx (* 0.15 (Math/cos heading)))
+        back-y (- cy (* 0.15 (Math/sin heading)))
+        perp-x (* 0.2 (Math/cos (+ heading (/ Math/PI 2))))
+        perp-y (* 0.2 (Math/sin (+ heading (/ Math/PI 2))))
+        left-x (+ back-x perp-x) left-y (+ back-y perp-y)
+        right-x (- back-x perp-x) right-y (- back-y perp-y)]
+    (.setColor4f ^Paint paint color)
+    (canvas/draw-triangles canvas
+      (into-array Point
+        [(util/point nose-x nose-y)
+         (util/point left-x left-y)
+         (util/point right-x right-y)])
+      (int-array [(unchecked-int 0xFFFFFFFF)
+                  (unchecked-int 0xFFFFFFFF)
+                  (unchecked-int 0xFFFFFFFF)])
+      paint)))
 
 (defn on-paint [ctx canvas size]
   (let [;; timing
@@ -146,27 +162,31 @@
             (canvas/draw-line canvas (util/point min-x y) (util/point max-x y) paint))
 
           (let [player (:player @state/*state)
-                [px py] (:pos player)]
-            (draw-hit player (Color4f. 0.9 0.2 0.2 1.0))  ;; red
+                [px py] (:pos player)
+                unit-colour (Color4f. 0.9 0.2 0.2 1.0)  ;; red
+                accent-colour (Color4f. 0.5 0.1 0.1 1.0)]  ;; dark red
+            (draw-hit player unit-colour)
             (let [death-timer (:death-timer player 0)
                   radius (if (= :dying (:state player))
                            (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
                            0.4)]
               ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
               (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) radius paint))
-            (draw-nose canvas player)
+            (draw-nose canvas player paint accent-colour)
             (draw-hp-bar canvas paint px py (:hp player) (:max-hp player)))
 
           (doseq [ally (:allies @state/*state)]
             (let [[ax ay] (:pos ally)
-                  path (:path ally)]
-              (draw-hit ally (Color4f. 0.3 0.5 0.9 1.0))  ;; light blue
+                  path (:path ally)
+                  unit-colour (Color4f. 0.3 0.5 0.9 1.0)  ;; light blue
+                  accent-colour (Color4f. 0.15 0.25 0.5 1.0)]  ;; dark blue
+              (draw-hit ally unit-colour)
               (let [death-timer (:death-timer ally 0)
                     radius (if (= :dying (:state ally))
                              (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
                              0.4)]
                 (canvas/draw-circle canvas (+ ax 0.5) (+ ay 0.5) radius paint))
-              (draw-nose canvas ally)
+              (draw-nose canvas ally paint accent-colour)
               (draw-hp-bar canvas paint ax ay (:hp ally) (:max-hp ally))
 
               ;; draw debug pathfinding path
@@ -189,14 +209,16 @@
 
         (doseq [enemy (:enemies @state/*state)]
           (let [[ex ey] (:pos enemy)
-                path (:path enemy)]
-            (draw-hit enemy (Color4f. 0.9 0.4 0.1 1.0))  ;; orange
+                path (:path enemy)
+                unit-colour (Color4f. 0.9 0.4 0.1 1.0)  ;; orange
+                accent-colour (Color4f. 0.5 0.2 0.05 1.0)]  ;; dark orange
+            (draw-hit enemy unit-colour)
             (let [death-timer (:death-timer enemy 0)
                   radius (if (= :dying (:state enemy))
                            (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
                            0.4)]
               (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) radius paint))
-            (draw-nose canvas enemy)
+            (draw-nose canvas enemy paint accent-colour)
             (draw-hp-bar canvas paint ex ey (:hp enemy) (:max-hp enemy))
             ;; path debug
             (when (seq path)
