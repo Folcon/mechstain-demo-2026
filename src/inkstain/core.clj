@@ -58,7 +58,6 @@
       (ui/window
         (merge
           {:title    (str config/version-string "👋")
-           :mac-icon "dev/imgs/icon.icns"
            :screen   (:id (first (app/screens)))
            ;; TODO: Doesn't look like it's picking up the new size, check!
            :width    (first config/init-window-size)
