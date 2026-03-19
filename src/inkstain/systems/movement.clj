@@ -129,18 +129,25 @@
           [nx ny] next-node
           [px py] (:pos peep)
           dx (- nx px) dy (- ny py)
+
+          target-heading (Math/atan2 dy dx)
+
           job-type (get-in peep [:job :type])
+          ;; TODO: Add combat based urgency as well to flesh out combat
           urgency (get job-locomotion job-type :run)
-          speed (* (:max-speed peep) (get locomotion-speed urgency 1.0))
-          [new-x new-y arrived?] (move-toward [px py] [nx ny] speed dt)
 
           ;; set facing for animation
           facing (if (and (zero? dx) (zero? dy))
                    (:facing peep :south)
                    (facing-from-delta dx dy))]
+          max-speed (or (-> peep :mech :chassis chassis-movement :max-speed)
+                      (:max-speed peep))
+          speed (* max-speed (get locomotion-speed urgency 1.0))
+          ;; clean up later
+          [_new-x _new-y arrived?] (move-toward [px py] [nx ny] speed dt)]
       (if arrived?
         (if (seq remaining)
-          (assoc peep :pos [new-x new-y] :path (vec remaining) :facing facing)
-          (assoc peep :pos [new-x new-y] :path [] :state :idle :facing facing))
-        (assoc peep :pos [new-x new-y] :facing facing)))
+          (assoc peep :target-speed speed :path (vec remaining) :target-heading target-heading :facing facing)
+          (assoc peep :target-speed 0.0 :path [] :state :idle :target-heading target-heading :facing facing))
+        (assoc peep :target-speed speed :target-heading target-heading :facing facing)))
     peep))
