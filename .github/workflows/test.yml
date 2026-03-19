@@ -1,0 +1,63 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "src/java/**"
+      - "test/**"
+      - "deps.edn"
+      - "build.clj"
+      - ".github/workflows/test.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "src/**"
+      - "src/java/**"
+      - "test/**"
+      - "deps.edn"
+      - "build.clj"
+      - ".github/workflows/test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Clojure CLI
+        uses: DeLaGuardo/setup-clojure@13.5.3
+        with:
+          cli: 'latest'
+
+      - name: Cache Clojure dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            .cpcache
+          key: clj-${{ runner.os }}-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            clj-${{ runner.os }}-
+
+      - name: Run tests
+        id: tests
+        continue-on-error: true
+        run: clojure -M:test
+
+      - name: Build as a smoke test
+        if: always()
+        run: clojure -T:build uber
+
+      - name: Fail if tests failed
+        if: always() && steps.tests.outcome == 'failure'
+        run: exit 1

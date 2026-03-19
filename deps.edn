@@ -28,8 +28,8 @@
   io.github.humbleui/skija-macos-arm64 {;;:local/root "libs/skija-macos-arm64-0.143.11.jar"
                                         ;;#_#_
                                         :mvn/version "0.116.2" :exclusions [io.github.humbleui/types]}
-  io.github.humbleui/humbleui          {:local/root "checkouts/HumbleUI"}
-  #_
+  io.github.humbleui/humbleui          #_{:local/root "checkouts/HumbleUI"}
+  ;;#_
   {:git/url "https://github.com/HumbleUI/HumbleUI"
    :sha     "89d7ab0fffdd2f013f066a3bd766f0a7254412dc"
    :exclusions [io.github.humbleui/types]}

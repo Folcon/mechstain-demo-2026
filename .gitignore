@@ -5,3 +5,5 @@
 .state
 .repl-port
 /checkouts
+/releases
+/target

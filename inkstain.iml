@@ -33,6 +33,7 @@
     <orderEntry type="library" name="Deps: lambdaisland/clj-diff:1.4.78" level="project" />
     <orderEntry type="library" name="Deps: tailrecursion/cljs-priority-map:1.2.1" level="project" />
     <orderEntry type="library" name="Deps: org.slf4j/jcl-over-slf4j:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/humbleui:89d7ab" level="project" />
     <orderEntry type="library" name="Deps: net.incongru.watchservice/barbary-watchservice:1.0" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/skija-linux-x64:0.116.2" level="project" />
     <orderEntry type="library" name="Deps: io.github.tonsky/duti:fc833a" level="project" />
@@ -89,6 +90,5 @@
     <orderEntry type="library" name="Deps: org.apache.commons/commons-exec:1.3" level="project" />
     <orderEntry type="library" name="Deps: meta-merge:1.0.0" level="project" />
     <orderEntry type="library" name="Deps: com.squidpony/squidlib-util:3.0.6" level="project" />
-    <orderEntry type="module" module-name="HumbleUI" />
   </component>
 </module>

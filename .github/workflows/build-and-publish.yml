@@ -1,0 +1,365 @@
+name: Build and Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to itch.io'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write  # Required for creating GitHub releases
+
+env:
+  APP_NAME: Mechstain
+  GAME_NAME: mechstain
+  ITCH_GAME: mechstain-7drl-2026
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86-64
+            channel: linux-x86-64
+          - os: macos-13
+            platform: macos
+            arch: x86-64
+            channel: macos-x86-64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            channel: macos-arm64
+          - os: windows-latest
+            platform: windows
+            arch: x86-64
+            channel: windows-x86-64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Clojure CLI
+        uses: DeLaGuardo/setup-clojure@13.5.3
+        with:
+          cli: 'latest'
+
+      - name: Cache Clojure dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            .cpcache
+          key: clj-${{ runner.os }}-${{ hashFiles('deps.edn') }}
+          restore-keys: clj-${{ runner.os }}-
+
+      - name: Create version number
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # Tag: extract version from v1.2.3
+            echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            # Branch/manual: use short SHA
+            echo "RELEASE_VERSION=dev-${GITHUB_SHA::7}" >> $GITHUB_ENV
+          fi
+
+      - name: Build uberjar
+        run: clojure -T:build uber
+
+      - name: Set app-version arg
+        id: app_version
+        shell: bash
+        run: |
+          # Only set app-version for proper semver tags (jpackage is picky)
+          if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "app_version_arg=--app-version ${RELEASE_VERSION}" >> $GITHUB_OUTPUT
+          else
+            echo "app_version_arg=" >> $GITHUB_OUTPUT
+          fi
+
+      # ==================== Linux Build ====================
+      - name: Build package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: jpackage @jpackage/common @jpackage/linux ${{ steps.app_version.outputs.app_version_arg }}
+
+      - name: Rename artifact (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          ls -la *.deb
+          mv *.deb ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
+
+      # ==================== macOS Build ====================
+      - name: Build package (macOS)
+        if: matrix.platform == 'macos'
+        run: jpackage @jpackage/common @jpackage/mac ${{ steps.app_version.outputs.app_version_arg }}
+
+      - name: Rename DMG (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          ls -la *.dmg
+          mv *.dmg ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
+
+      - name: Codesign and Notarize (macOS)
+        if: matrix.platform == 'macos' && env.MACOS_CERTIFICATE != ''
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_IDENTITY: ${{ secrets.MACOS_IDENTITY }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          NOTARY_USERNAME: ${{ secrets.NOTARY_USERNAME }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: |
+          echo "=> Generate Local Password"
+          export PASSWORD=$(echo $RANDOM | git hash-object --stdin | head -c 20)
+
+          echo "=> Load Certificate to Local System"
+          echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+
+          echo "=> Create New Keychain"
+          security create-keychain -p $PASSWORD build.keychain
+
+          echo "=> Assign Keychain as System Default"
+          security default-keychain -s build.keychain
+
+          echo "=> Unlock Keychain"
+          security unlock-keychain -p $PASSWORD build.keychain
+
+          echo "=> Load Certificate to Keychain"
+          security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+
+          echo "=> Set Permissions on Keychain Certificate"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $PASSWORD build.keychain
+
+          echo "=> Mount DMG"
+          hdiutil attach "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg"
+
+          echo "=> Copy App to Local Workspace"
+          cp -r "/Volumes/${{ env.APP_NAME }}/${{ env.APP_NAME }}.app" .
+
+          echo "=> Detach mounted DMG"
+          hdiutil detach "/Volumes/${{ env.APP_NAME }}"
+
+          echo "=> Extract JAR to sign native libraries inside"
+          JAR_PATH="${{ env.APP_NAME }}.app/Contents/app/uber.jar"
+          mkdir jar_contents
+          cd jar_contents
+          unzip -q "../$JAR_PATH"
+
+          echo "=> Sign all dylibs inside JAR"
+          find . -type f -name "*.dylib" | while read lib; do
+            echo "Signing (in JAR): $lib"
+            /usr/bin/codesign --force --options runtime --timestamp -s "$MACOS_IDENTITY" --entitlements ../jpackage/entitlements.plist "$lib"
+          done
+
+          echo "=> Sign all jnilib files inside JAR"
+          find . -type f -name "*.jnilib" | while read lib; do
+            echo "Signing (in JAR): $lib"
+            /usr/bin/codesign --force --options runtime --timestamp -s "$MACOS_IDENTITY" --entitlements ../jpackage/entitlements.plist "$lib"
+          done
+
+          echo "=> Repackage JAR with signed natives"
+          rm "../$JAR_PATH"
+          zip -q -r "../$JAR_PATH" .
+          cd ..
+          rm -rf jar_contents
+
+          echo "=> Sign all binaries in app (innermost first)"
+          # Sign all dylibs and executables in proper order
+          find "${{ env.APP_NAME }}.app" -type f \( -name "*.dylib" -o -name "*.jnilib" \) -print0 | while IFS= read -r -d '' lib; do
+            echo "Signing: $lib"
+            /usr/bin/codesign --force --options runtime --timestamp -s "$MACOS_IDENTITY" --entitlements jpackage/entitlements.plist "$lib" || true
+          done
+
+          echo "=> Sign all executables in runtime (bin and lib)"
+          find "${{ env.APP_NAME }}.app/Contents/runtime/Contents/Home" -type f -perm +111 ! -name "*.dylib" -print0 2>/dev/null | while IFS= read -r -d '' exe; do
+            echo "Signing: $exe"
+            /usr/bin/codesign --force --options runtime --timestamp -s "$MACOS_IDENTITY" --entitlements jpackage/entitlements.plist "$exe" || true
+          done
+
+          echo "=> Sign the runtime bundle"
+          /usr/bin/codesign --force --options runtime --timestamp -s "$MACOS_IDENTITY" --entitlements jpackage/entitlements.plist "${{ env.APP_NAME }}.app/Contents/runtime"
+
+          echo "=> Codesign App Bundle"
+          /usr/bin/codesign --force --options runtime --timestamp -s "$MACOS_IDENTITY" --entitlements jpackage/entitlements.plist "${{ env.APP_NAME }}.app"
+
+          echo "=> Verify signature"
+          codesign --verify --deep --strict --verbose=2 "${{ env.APP_NAME }}.app" || echo "Verification had warnings"
+
+          echo "=> Create DMG Data Directory"
+          mkdir dmg_dir
+          cp -r "${{ env.APP_NAME }}.app" dmg_dir/
+
+          echo "=> Create Writable DMG File"
+          hdiutil create /tmp/tmp.dmg -ov -volname "${{ env.APP_NAME }}" -fs HFS+ -srcfolder "dmg_dir/"
+
+          echo "=> Move Old DMG Version"
+          mv "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg" "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.old.dmg"
+
+          echo "=> Convert Writable DMG File to Readonly"
+          hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg"
+
+          echo "=> Sign the DMG"
+          /usr/bin/codesign --force --timestamp -s "$MACOS_IDENTITY" --entitlements jpackage/entitlements.plist "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg"
+
+          echo "=> Send DMG to be Notarised"
+          NOTARY_RESPONSE=$(xcrun notarytool submit "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg" --apple-id "$NOTARY_USERNAME" --password "$NOTARY_PASSWORD" --team-id "$TEAM_ID" --wait 2>&1)
+          echo "$NOTARY_RESPONSE"
+
+          # Extract submission ID and check status
+          SUBMISSION_ID=$(echo "$NOTARY_RESPONSE" | grep -o 'id: [a-f0-9-]*' | head -1 | cut -d' ' -f2)
+          if echo "$NOTARY_RESPONSE" | grep -q "status: Invalid"; then
+            echo "=> Notarization FAILED - fetching log for details..."
+            xcrun notarytool log "$SUBMISSION_ID" --apple-id "$NOTARY_USERNAME" --password "$NOTARY_PASSWORD" --team-id "$TEAM_ID"
+            exit 1
+          fi
+
+          echo "=> Staple the notarization ticket"
+          xcrun stapler staple "${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg"
+
+      # ==================== Windows Build ====================
+      - name: Build package (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: jpackage @jpackage/common @jpackage/windows ${{ steps.app_version.outputs.app_version_arg }}
+
+      - name: Prepare Windows artifact
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Host "=== Before processing ==="
+          Get-ChildItem
+
+          if (Test-Path "${{ env.APP_NAME }}" -PathType Container) {
+            Write-Host "Found ${{ env.APP_NAME }} directory, renaming..."
+            Rename-Item "${{ env.APP_NAME }}" "${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}"
+          } else {
+            Write-Host "ERROR: No ${{ env.APP_NAME }} directory found"
+            Get-ChildItem
+            exit 1
+          }
+
+          Write-Host "=== After processing ==="
+          Get-ChildItem
+
+      # ==================== Upload Artifacts ====================
+      - name: Upload artifact (Linux)
+        if: always() && matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
+          path: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
+          if-no-files-found: ignore
+
+      - name: Upload artifact (macOS)
+        if: always() && matrix.platform == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
+          path: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
+          if-no-files-found: ignore
+
+      - name: Upload artifact (Windows)
+        if: always() && matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}
+          path: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}/
+          if-no-files-found: ignore
+
+      # ==================== GitHub Release ====================
+      - name: Create Windows release zip
+        if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}" -DestinationPath "${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}.zip"
+
+      - name: Release artifact (Linux)
+        if: matrix.platform == 'linux' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
+
+      - name: Release artifact (macOS)
+        if: matrix.platform == 'macos' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg
+
+      - name: Release artifact (Windows)
+        if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-${{ matrix.arch }}.zip
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.publish == 'true'
+
+    steps:
+      - name: Create version number
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_VERSION=dev-${GITHUB_SHA::7}" >> $GITHUB_ENV
+          fi
+
+      - name: Download Linux x86-64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_x86-64.deb
+          path: .
+
+      - name: Download macOS ARM64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-arm64.dmg
+          path: .
+
+      - name: Download macOS x86-64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-x86-64.dmg
+          path: .
+
+      - name: Download Windows x86-64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-x86-64
+          path: ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-x86-64
+
+      - name: Display downloaded files
+        run: ls -laR
+
+      - name: Publish to itch.io
+        uses: Ayowel/butler-to-itch@v1
+        with:
+          butler_key: ${{ secrets.BUTLER_API_KEY }}
+          itch_user: ${{ vars.ITCH_USERNAME }}
+          itch_game: ${{ env.ITCH_GAME }}
+          version: ${{ env.RELEASE_VERSION }}
+          files: |
+            linux-x86-64 ${{ env.GAME_NAME }}_${{ env.RELEASE_VERSION }}_x86-64.deb
+            macos-arm64 ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-arm64.dmg
+            macos-x86-64 ${{ env.APP_NAME }}-${{ env.RELEASE_VERSION }}-x86-64.dmg
+            windows-x86-64 ${{ env.GAME_NAME }}-${{ env.RELEASE_VERSION }}-windows-x86-64
