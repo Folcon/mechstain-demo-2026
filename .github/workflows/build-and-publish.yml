@@ -30,7 +30,7 @@ jobs:
             platform: linux
             arch: x86-64
             channel: linux-x86-64
-          - os: macos-13
+          - os: macos-15-intel
             platform: macos
             arch: x86-64
             channel: macos-x86-64
