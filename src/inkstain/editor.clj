@@ -1,4 +1,4 @@
-(ns inkstain.core
+(ns inkstain.editor
   (:require
    [clj-reload.core :as reload]
    [clojure.edn :as edn]

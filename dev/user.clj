@@ -35,7 +35,7 @@
   (let [args (apply array-map args)
         ;; starting app
         _      (set! *warn-on-reflection* true)
-        window (@(requiring-resolve 'inkstain.core/-main))
+        window (@(requiring-resolve 'inkstain.editor/-main))
         _      (alter-var-root #'monitor (constantly window))
         ;; starting socket repl
         port   (some-> (get args "--port") parse-long)
