@@ -12,6 +12,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/classes" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -39,6 +40,7 @@
     <orderEntry type="library" name="Deps: org.clojure/google-closure-library:0.0-20151016-61277aea" level="project" />
     <orderEntry type="library" name="Deps: com.badlogicgames.gdx/gdx-jnigen-loader:2.2.0" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/clojurescript:1.7.170" level="project" />
+    <orderEntry type="library" name="Deps: org.jfree/jfreechart:1.5.3" level="project" />
     <orderEntry type="library" name="Deps: slingshot:0.12.2" level="project" />
     <orderEntry type="library" name="Deps: com.clojure-goes-fast/clj-async-profiler:1.3.0" level="project" />
     <orderEntry type="library" name="Deps: aysylu/loom:1.0.2" level="project" />

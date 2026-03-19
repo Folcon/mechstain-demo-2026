@@ -1,1 +1,0 @@
-test:/Users/folcon/Documents/Code/forever-projects/gamedev/inkstain/src/java/.:/Users/folcon/.m2/repository/org/clojure/clojure/1.12.4/clojure-1.12.4.jar:/Users/folcon/.m2/repository/org/clojure/core.specs.alpha/0.4.74/core.specs.alpha-0.4.74.jar:/Users/folcon/.m2/repository/org/clojure/spec.alpha/0.5.238/spec.alpha-0.5.238.jar
