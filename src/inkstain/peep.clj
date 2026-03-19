@@ -10,7 +10,7 @@
 
    ;; mech speed etc comes from chassis
    :mech {:chassis :standard}    ;; :standard :charger :dash
-   :speed 4.0            ;; tiles per second
+   :speed 0.0            ;; tiles per second
    :target-speed 0.0     ;; how fast do you want to go
    :heading nil          ;; radians with 0 = east, pi/2 = south
    :target-heading 0.0   ;; where do you want to be facing (nil = no turning)
