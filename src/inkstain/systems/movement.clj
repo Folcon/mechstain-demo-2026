@@ -2,12 +2,13 @@
 
 
 
-(defn facing-from-delta
-  "determine facing direction from movement delta"
-  [dx dy]
-  (if (> (Math/abs (double dx)) (Math/abs (double dy)))
-    (if (pos? dx) :east :west)
-    (if (pos? dy) :north :south)))
+(defn heading->facing [heading]
+  (let [deg (mod (Math/toDegrees heading) 360)]
+    (cond
+      (or (< deg 45) (>= deg 315)) :east
+      (< deg 135) :south    ;; +y is south
+      (< deg 225) :west
+      :else :north)))
 
 (def chassis-movement
   {;; peep not in a mech
@@ -88,13 +89,12 @@
         new-y (+ py (* vy dt))
 
         ;; set facing for animation
-        facing (if (and (zero? dx) (zero? dy))
-                 (:facing peep :south)
-                 (facing-from-delta dx dy))]
+        facing (heading->facing new-heading)]
     (assoc entity
       :pos [new-x new-y]
       :heading new-heading
-      :speed new-speed)))
+      :speed new-speed
+      :facing facing)))
 
 (def locomotion-speed
   "speed multiplier per locomotion urgency"
@@ -135,11 +135,6 @@
           job-type (get-in peep [:job :type])
           ;; TODO: Add combat based urgency as well to flesh out combat
           urgency (get job-locomotion job-type :run)
-
-          ;; set facing for animation
-          facing (if (and (zero? dx) (zero? dy))
-                   (:facing peep :south)
-                   (facing-from-delta dx dy))]
           max-speed (or (-> peep :mech :chassis chassis-movement :max-speed)
                       (:max-speed peep))
           speed (* max-speed (get locomotion-speed urgency 1.0))
@@ -147,7 +142,7 @@
           [_new-x _new-y arrived?] (move-toward [px py] [nx ny] speed dt)]
       (if arrived?
         (if (seq remaining)
-          (assoc peep :target-speed speed :path (vec remaining) :target-heading target-heading :facing facing)
-          (assoc peep :target-speed 0.0 :path [] :state :idle :target-heading target-heading :facing facing))
-        (assoc peep :target-speed speed :target-heading target-heading :facing facing)))
+          (assoc peep :target-speed speed :path (vec remaining) :target-heading target-heading)
+          (assoc peep :target-speed 0.0 :path [] :state :idle :target-heading target-heading))
+        (assoc peep :target-speed speed :target-heading target-heading)))
     peep))
