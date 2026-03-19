@@ -10,16 +10,16 @@ local:
 	lein clean && lein with-profile +macos,+prod trampoline run
 
 uberjar:
-	lein clean && lein uberjar
+	lein clean && clojure -T:build uber
 
 run-jar:
-	java -jar target/fruit-economy-standalone.jar
+	java --enable-native-access=ALL-UNNAMED -cp target/uber.jar clojure.main -m inkstain.core
 
 jar-test: uberjar run-jar
 	echo "DONE"
 
 uberjar-deps:
-	lein clean && clojure -A:uberjar
+	lein clean && clojure -T:build uber
 
 prod-deps: uberjar-deps prod-mac # prod-win prod-linux ## Others can only be built on respective systems, so test later
 	echo "DONE"
@@ -29,22 +29,23 @@ prod: uberjar prod-mac # prod-win prod-linux ## Others can only be built on resp
 prod-mac:
 	export JAVA_HOME=`/usr/libexec/java_home` && \
 	cd releases && \
-	$$JAVA_HOME/bin/jpackage --name "Fruit Economy" \
-	--input ../target --main-jar fruit-economy-standalone.jar \
-	--main-class clojure.main --arguments -m --arguments fruit-economy.core \
+	$$JAVA_HOME/bin/jpackage --name "Mechstain" \
+	--input ../target --main-jar uber.jar \
+	--main-class clojure.main --arguments -m --arguments inkstain.core \
+	--java-options --enable-native-access=ALL-UNNAMED
 prod-win:
 	export JAVA_HOME=`/usr/libexec/java_home` && \
     	cd releases && \
-    	$$JAVA_HOME/bin/jpackage --name "Fruit Economy" \
-    	--input ../target --main-jar fruit-economy-standalone.jar \
-    	--main-class clojure.main --arguments -m --arguments fruit-economy.core \
+    	$$JAVA_HOME/bin/jpackage --name "Mechstain" \
+    	--input ../target --main-jar uber.jar \
+    	--main-class clojure.main --arguments -m --arguments inkstain.core \
     	--type exe
 prod-linux:
 	export JAVA_HOME=`/usr/libexec/java_home` && \
     	cd releases && \
-    	$$JAVA_HOME/bin/jpackage --name "Fruit Economy" \
-    	--input ../target --main-jar fruit-economy-standalone.jar \
-    	--main-class clojure.main --arguments -m --arguments fruit-economy.core \
+    	$$JAVA_HOME/bin/jpackage --name "Mechstain" \
+    	--input ../target --main-jar uber.jar \
+    	--main-class clojure.main --arguments -m --arguments inkstain.core \
     	--type pkg --linux-shortcut
 
 bin:

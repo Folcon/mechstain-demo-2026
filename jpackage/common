@@ -1,7 +1,8 @@
 --verbose
---name "Fruit Economy"
+--name "Mechstain"
 --input target
---main-jar fruit-economy-standalone.jar
+--main-jar uber.jar
 --main-class clojure.main
 --arguments -m
---arguments fruit-economy.core
+--arguments inkstain.core
+--java-options --enable-native-access=ALL-UNNAMED
