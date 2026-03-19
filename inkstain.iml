@@ -21,27 +21,36 @@
     <orderEntry type="library" name="Deps: criterium:0.4.6" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/skija-shared:0.116.2" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/core.specs.alpha:0.2.62" level="project" />
+    <orderEntry type="library" name="Deps: lambdaisland/kaocha:1.91.1392" level="project" />
     <orderEntry type="library" name="Deps: guru.nidi/graphviz-java:0.18.1" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/skija-windows-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: expound:0.9.0" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/spec.alpha:0.3.218" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/tools.cli:1.1.230" level="project" />
     <orderEntry type="library" name="Deps: net.arnx/nashorn-promise:0.1.1" level="project" />
     <orderEntry type="library" name="Deps: com.badlogicgames.jamepad/jamepad:2.30.0.0" level="project" />
     <orderEntry type="library" name="Deps: lambdaisland/clj-diff:1.4.78" level="project" />
     <orderEntry type="library" name="Deps: tailrecursion/cljs-priority-map:1.2.1" level="project" />
     <orderEntry type="library" name="Deps: org.slf4j/jcl-over-slf4j:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: net.incongru.watchservice/barbary-watchservice:1.0" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/skija-linux-x64:0.116.2" level="project" />
     <orderEntry type="library" name="Deps: io.github.tonsky/duti:fc833a" level="project" />
     <orderEntry type="library" name="Deps: com.github.tommyettinger/regexodus:0.1.14" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/google-closure-library:0.0-20151016-61277aea" level="project" />
     <orderEntry type="library" name="Deps: com.badlogicgames.gdx/gdx-jnigen-loader:2.2.0" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/clojurescript:1.7.170" level="project" />
+    <orderEntry type="library" name="Deps: slingshot:0.12.2" level="project" />
     <orderEntry type="library" name="Deps: com.clojure-goes-fast/clj-async-profiler:1.3.0" level="project" />
     <orderEntry type="library" name="Deps: aysylu/loom:1.0.2" level="project" />
     <orderEntry type="library" name="Deps: fipp:0.6.27" level="project" />
+    <orderEntry type="library" name="Deps: com.nextjournal/beholder:1.0.2" level="project" />
+    <orderEntry type="library" name="Deps: aero:1.1.6" level="project" />
     <orderEntry type="library" name="Deps: org.slf4j/jul-to-slf4j:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: lambdaisland/tools.namespace:0.3.256" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/jwm:0.4.18" level="project" />
     <orderEntry type="library" name="Deps: mvxcvi/arrangement:2.1.0" level="project" />
     <orderEntry type="library" name="Deps: org.webjars.npm/viz.js-graphviz-java:2.1.3" level="project" />
+    <orderEntry type="library" name="Deps: io.methvin/directory-watcher:0.17.3" level="project" />
     <orderEntry type="library" name="Deps: clj-tuple:0.2.2" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-x64:0.116.2" level="project" />
     <orderEntry type="library" name="Deps: io.github.tonsky/extend-clj:0.1.0" level="project" />
@@ -52,6 +61,8 @@
     <orderEntry type="library" name="Deps: hiccup:1.0.5" level="project" />
     <orderEntry type="library" name="Deps: guru.nidi.com.eclipsesource.j2v8/j2v8_macosx_x86_64:4.6.0" level="project" />
     <orderEntry type="library" name="Deps: riddley:0.1.12" level="project" />
+    <orderEntry type="library" name="Deps: progrock:0.1.2" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/java.classpath:1.0.0" level="project" />
     <orderEntry type="library" name="Deps: environ:1.2.0" level="project" />
     <orderEntry type="library" name="Deps: borkdude/dynaload:0.3.5" level="project" />
     <orderEntry type="library" name="Deps: borkdude/edamame:1.4.27" level="project" />
@@ -59,18 +70,22 @@
     <orderEntry type="library" name="Deps: com.google.javascript/closure-compiler:v20151015" level="project" />
     <orderEntry type="library" name="Deps: guru.nidi.com.kitfox/svgSalamander:1.1.3" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/core.rrb-vector:0.1.2" level="project" />
-    <orderEntry type="library" name="Deps: org.clojure/tools.reader:1.3.4" level="project" />
+    <orderEntry type="library" name="Deps: net.java.dev.jna/jna:5.12.1" level="project" />
+    <orderEntry type="library" name="Deps: org.clojure/tools.reader:1.3.6" level="project" />
     <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-arm64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: org.tcrawley/dynapath:1.1.0" level="project" />
     <orderEntry type="library" name="Deps: potemkin:0.4.5" level="project" />
     <orderEntry type="library" name="Deps: nrepl:1.5.0" level="project" />
     <orderEntry type="library" name="Deps: com.rpl/specter:1.1.2" level="project" />
-    <orderEntry type="library" name="Deps: org.slf4j/slf4j-api:1.7.30" level="project" />
+    <orderEntry type="library" name="Deps: org.slf4j/slf4j-api:1.7.36" level="project" />
     <orderEntry type="library" name="Deps: dorothy:0.0.6" level="project" />
     <orderEntry type="library" name="Deps: ubergraph:0.8.2" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/test.check:1.1.1" level="project" />
+    <orderEntry type="library" name="Deps: hawk:0.2.11" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/data.priority-map:1.2.1" level="project" />
     <orderEntry type="library" name="Deps: com.google.code.findbugs/jsr305:3.0.2" level="project" />
     <orderEntry type="library" name="Deps: org.apache.commons/commons-exec:1.3" level="project" />
+    <orderEntry type="library" name="Deps: meta-merge:1.0.0" level="project" />
     <orderEntry type="library" name="Deps: com.squidpony/squidlib-util:3.0.6" level="project" />
     <orderEntry type="module" module-name="HumbleUI" />
   </component>
