@@ -58,10 +58,10 @@
   (let [chassis-type (movement-chassis entity)
         {:keys [max-speed acceleration deceleration] :as props} (chassis-movement chassis-type)
 
-        speed (:speed entity 0.0)
-        heading (:heading entity 0.0)
-        target-speed (:target-speed entity 0.0)
-        target-heading (:target-heading entity heading)
+        speed (or (:speed entity) 0.0)
+        heading (or (:heading entity) 0.0)
+        target-speed (or (:target-speed entity) 0.0)
+        target-heading (or (:target-heading entity) heading)
 
         ;; turn toward target heading
         max-turn (* (get-turn-rate props speed) dt)
