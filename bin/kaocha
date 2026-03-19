@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Kaocha test runner wrapper
+# Usage:
+#   bin/kaocha                     # Run all tests
+#   bin/kaocha --focus PATTERN     # Run tests matching pattern
+#   bin/kaocha --watch             # Watch mode
+#   bin/kaocha --fail-fast         # Stop on first failure
+#   bin/kaocha --fresh             # Clear cache before running
+
+cd "$(dirname "$0")/.."
+
+# Handle --fresh flag to clear cache
+if [[ "$1" == "--fresh" ]]; then
+    echo "Clearing classpath cache..."
+    rm -rf .cpcache
+    shift
+fi
+
+# Clear cache if deps.edn is newer than cache (avoids stale dependency issues)
+if [ -d .cpcache ] && [ deps.edn -nt .cpcache ]; then
+    echo "deps.edn changed, clearing classpath cache..."
+    rm -rf .cpcache
+fi
+
+# Compile Java sources before running tests
+# This must happen before kaocha loads test namespaces
+mkdir -p target/classes
+clojure -T:build compile-java
+
+echo "Run Tests"
+exec clojure -M:test "$@"
