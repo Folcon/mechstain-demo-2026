@@ -1,4 +1,5 @@
-(ns inkstain.systems.movement)
+(ns inkstain.systems.movement
+  (:require [inkstain.systems.grid :as grid]))
 
 
 
@@ -54,7 +55,7 @@
     ;; add support for leaving the mech
     :infantry))
 
-(defn step-physics [entity dt]
+(defn step-physics [entity grid dt]
   (let [chassis-type (movement-chassis entity)
         {:keys [max-speed acceleration deceleration] :as props} (chassis-movement chassis-type)
 
@@ -88,10 +89,22 @@
         new-x (+ px (* vx dt))
         new-y (+ py (* vy dt))
 
+        new-pos (let [rx (Math/round ^double new-x)
+                      ry (Math/round ^double new-y)]
+                 (cond
+                   ;; target walkable, keep going
+                   (grid/walkable? grid rx ry) [new-x new-y]
+                   ;; slide along x or y
+                   (grid/walkable? grid (Math/round ^double px) ry) [px new-y]
+                   (grid/walkable? grid rx (Math/round ^double py)) [new-x py]
+                   ;; stop
+                   ;; TODO: Damage for slamming to a stop?
+                   :else [px py]))
+
         ;; set facing for animation
         facing (heading->facing new-heading)]
     (assoc entity
-      :pos [new-x new-y]
+      :pos new-pos
       :heading new-heading
       :speed new-speed
       :facing facing)))

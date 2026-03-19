@@ -3,6 +3,7 @@
             [inkstain.state :as state]
             [inkstain.systems.grid :as grid]
             [inkstain.input :as input]
+            [inkstain.systems.collision :as collision]
             [inkstain.systems.pathfinding :as pathfinding]
             [inkstain.systems.movement :as movement]
             [inkstain.systems.combat :as combat]))
@@ -234,11 +235,41 @@
                     enemy))))
         (:enemies state)))))
 
-(defn tick-physics [state dt]
+(defn tick-physics [{:keys [grid] :as state} dt]
   (-> state
-    (update :player movement/step-physics dt)
-    (assoc :allies (mapv (fn [ent] (movement/step-physics ent dt)) (:allies state)))
-    (assoc :enemies (mapv (fn [ent] (movement/step-physics ent dt))  (:enemies state)))))
+    (update :player movement/step-physics grid dt)
+    (assoc :allies (mapv (fn [ent] (movement/step-physics ent grid dt)) (:allies state)))
+    (assoc :enemies (mapv (fn [ent] (movement/step-physics ent grid dt))  (:enemies state)))))
+
+(defn tick-separation [state dt]
+  (let [all-entities (into [(:player state)]
+                       (concat (:allies state) (:enemies state)))
+        ;; only include alive entities
+        alive (filterv #(> (:hp % 0) 0) all-entities)
+        spatial-hash (collision/build-spatial-hash alive)
+        grid (:grid state)]
+    (-> state
+      (update :player
+        (fn [p]
+          (let [old-pos (:pos p)]
+            (-> (first (collision/apply-separation [p] dt spatial-hash))
+              (collision/clamp-to-walkable old-pos grid)))))
+      (assoc :allies
+        (mapv (fn [a]
+                (if (> (:hp a 0) 0)
+                  (let [old-pos (:pos a)]
+                    (-> (first (collision/apply-separation [a] dt spatial-hash))
+                      (collision/clamp-to-walkable old-pos grid)))
+                  a))
+          (:allies state)))
+      (assoc :enemies
+        (mapv (fn [e]
+                (if (> (:hp e 0) 0)
+                  (let [old-pos (:pos e)]
+                    (-> (first (collision/apply-separation [e] dt spatial-hash))
+                      (collision/clamp-to-walkable old-pos grid)))
+                  e))
+          (:enemies state))))))
 
 (defn tick-bounds-check [state]
   (let [grid (:grid state)
@@ -288,6 +319,7 @@
     (tick-ally-movement dt)
     (tick-enemy-movement dt)
     (tick-physics dt)
+    (tick-separation dt)
     (tick-bounds-check)
     (tick-combat dt)
     (tick-score dt)
