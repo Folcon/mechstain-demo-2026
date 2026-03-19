@@ -62,20 +62,6 @@
       (cond->
         tactical-mode (assoc :tactical-mode tactical-mode)))))
 
-(defn tick-physics [state dt]
-  (-> state
-    (update :player movement/step-physics dt)
-    (assoc :allies (mapv (fn [ent] (movement/step-physics ent dt)) (:allies state)))
-    (assoc :enemies (mapv (fn [ent] (movement/step-physics ent dt))  (:enemies state)))))
-
-(defn tick-bounds-check [state]
-  (let [grid (:grid state)
-        clamp-fn (partial grid/clamp grid)]
-    (-> state
-      (update-in [:player :pos] clamp-fn)
-      (assoc :allies (mapv (fn [ally] (update ally :pos clamp-fn)) (:allies state)))
-      (assoc :enemies (mapv (fn [enemy] (update enemy :pos clamp-fn)) (:enemies state))))))
-
 (defn tick-ally-movement [state dt]
   (let [allies (:allies state)
         [px py] (:pos (:player state))
@@ -247,6 +233,20 @@
                     (movement/step-movement enemy dt)
                     enemy))))
         (:enemies state)))))
+
+(defn tick-physics [state dt]
+  (-> state
+    (update :player movement/step-physics dt)
+    (assoc :allies (mapv (fn [ent] (movement/step-physics ent dt)) (:allies state)))
+    (assoc :enemies (mapv (fn [ent] (movement/step-physics ent dt))  (:enemies state)))))
+
+(defn tick-bounds-check [state]
+  (let [grid (:grid state)
+        clamp-fn (partial grid/clamp grid)]
+    (-> state
+      (update-in [:player :pos] clamp-fn)
+      (assoc :allies (mapv (fn [ally] (update ally :pos clamp-fn)) (:allies state)))
+      (assoc :enemies (mapv (fn [enemy] (update enemy :pos clamp-fn)) (:enemies state))))))
 
 (defn tick-combat [state dt]
   (let [{:keys [player allies enemies]}
