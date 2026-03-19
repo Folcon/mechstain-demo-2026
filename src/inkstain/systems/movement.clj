@@ -58,12 +58,20 @@
 
 
 (def chassis-movement
-  {:standard {:max-speed 4.0
+  {;; peep not in a mech
+   :infantry  {:max-speed 2.5
+               :acceleration 20.0
+               :deceleration 20.0
+               :turn-rate-rest 720
+               :turn-rate-speed 720
+               :turn-speed-threshold 0.0}
+   :standard {:max-speed 4.0
               :acceleration 12.0     ;; high = responsive
               :deceleration 12.0
               :turn-rate-rest 360    ;; degrees/sec, instant at rest
               :turn-rate-speed 270   ;;   still good at speed
-              :turn-speed-threshold 1.0}})
+              :turn-speed-threshold 1.0} ;; below this speed, use rest turn rate
+   ,})
 
 (defn normalise-angle
   "normalise angle to [-pi, pi]"
@@ -87,8 +95,14 @@
     (Math/toRadians (+ (* (- 1.0 t) turn-rate-rest)
                       (* t turn-rate-speed)))))
 
+(defn movement-chassis [entity]
+  (if (:mech entity)
+    (get-in entity [:mech :chassis] :standard)
+    ;; add support for leaving the mech
+    :infantry))
+
 (defn step-physics [entity dt]
-  (let [chassis-type (get entity :chassis :standard)
+  (let [chassis-type (movement-chassis entity)
         {:keys [max-speed acceleration deceleration] :as props} (chassis-movement chassis-type)
 
         speed (:speed entity 0.0)
