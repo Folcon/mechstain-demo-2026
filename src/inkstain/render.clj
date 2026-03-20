@@ -24,9 +24,13 @@
     {:last-render (System/nanoTime)
      :camera      (camera/create-camera)
      :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
-     :player      (peep/make-player [5 5])
-     :allies      (vec (for [_i (range 5)]
-                         (peep/make-peep [(+ 4 (rand-int 3)) (+ 4 (rand-int 3))] :ally)))
+     :player      (-> (peep/make-player [5 5])
+                    (peep/make-mech :medium :standard))
+     :allies      [(-> (peep/make-peep [4 4] :ally) (peep/make-mech :light :dasher))
+                   (-> (peep/make-peep [6 4] :ally) (peep/make-mech :light :standard))
+                   (-> (peep/make-peep [4 6] :ally) (peep/make-mech :heavy :standard))
+                   (-> (peep/make-peep [6 6] :ally) (peep/make-mech :medium :charger))
+                   (-> (peep/make-peep [5 4] :ally) (peep/make-mech :medium :standard))]
 
      :enemies []
      :spawn-timer 0.0
@@ -167,9 +171,10 @@
                 accent-colour (Color4f. 0.5 0.1 0.1 1.0)]  ;; dark red
             (draw-hit player unit-colour)
             (let [death-timer (:death-timer player 0)
+                  base-radius (or (:size player) 0.4)
                   radius (if (= :dying (:state player))
-                           (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
-                           0.4)]
+                           (* base-radius (/ death-timer 0.5))  ;; shrink from 0.4 to 0
+                           base-radius)]
               ;; draw at tile center (px+0.5, py+0.5), radius ~0.4 tiles
               (canvas/draw-circle canvas (+ px 0.5) (+ py 0.5) radius paint))
             (draw-nose canvas player paint accent-colour)
@@ -182,9 +187,10 @@
                   accent-colour (Color4f. 0.15 0.25 0.5 1.0)]  ;; dark blue
               (draw-hit ally unit-colour)
               (let [death-timer (:death-timer ally 0)
+                    base-radius (or (:size ally) 0.4)
                     radius (if (= :dying (:state ally))
-                             (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
-                             0.4)]
+                             (* base-radius (/ death-timer 0.5))  ;; shrink from 0.4 to 0
+                             base-radius)]
                 (canvas/draw-circle canvas (+ ax 0.5) (+ ay 0.5) radius paint))
               (draw-nose canvas ally paint accent-colour)
               (draw-hp-bar canvas paint ax ay (:hp ally) (:max-hp ally))
@@ -214,9 +220,10 @@
                 accent-colour (Color4f. 0.5 0.2 0.05 1.0)]  ;; dark orange
             (draw-hit enemy unit-colour)
             (let [death-timer (:death-timer enemy 0)
+                  base-radius (or (:size enemy) 0.4)
                   radius (if (= :dying (:state enemy))
-                           (* 0.4 (/ death-timer 0.5))  ;; shrink from 0.4 to 0
-                           0.4)]
+                           (* base-radius (/ death-timer 0.5))  ;; shrink from 0.4 to 0
+                           base-radius)]
               (canvas/draw-circle canvas (+ ex 0.5) (+ ey 0.5) radius paint))
             (draw-nose canvas enemy paint accent-colour)
             (draw-hp-bar canvas paint ex ey (:hp enemy) (:max-hp enemy))

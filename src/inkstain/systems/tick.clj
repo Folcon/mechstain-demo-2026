@@ -300,10 +300,12 @@
         (< (count (:enemies state)) 100))
     (let [timer (- (:spawn-timer state) dt)]
       (if (<= timer 0)
-        (let [pos (grid/random-edge-pos (:grid state))]
+        (let [pos (grid/random-edge-pos (:grid state))
+              chassis (peep/random-chassis)
+              drive-train (movement/random-drive-train)]
           (-> state
             (assoc :spawn-timer (:spawn-interval state))
-            (update :enemies conj (peep/make-enemy pos))))
+            (update :enemies conj (peep/make-mech (peep/make-enemy pos) chassis drive-train))))
         (assoc state :spawn-timer timer)))
     state))
 

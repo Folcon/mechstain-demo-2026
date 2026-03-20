@@ -1,5 +1,6 @@
 (ns inkstain.systems.movement
-  (:require [inkstain.systems.grid :as grid]))
+  (:require [inkstain.systems.grid :as grid]
+            [inkstain.peep :as peep]))
 
 
 
@@ -11,6 +12,7 @@
       (< deg 225) :west
       :else :north)))
 
+;; TODO: think about whether it's better to have a mech ns
 (def drive-train-movement
   {;; peep not in a mech
    :infantry  {:max-speed 2.5
@@ -25,7 +27,33 @@
               :turn-rate-rest 360    ;; degrees/sec, instant at rest
               :turn-rate-speed 270   ;;   still good at speed
               :turn-speed-threshold 1.0} ;; below this speed, use rest turn rate
+   :charger  {:max-speed 7.0
+              :acceleration 3.0      ;; slow to build up speed
+              :deceleration 4.0      ;; slow to stop due to momentum
+              :turn-rate-rest 240
+              :turn-rate-speed 30    ;; terrible turning at speed
+              :turn-speed-threshold 2.0}
+   :dasher   {:max-speed 6.0
+              :acceleration 50.0     ;; near-instant burst
+              :deceleration 50.0     ;; stops on a pin
+              :turn-rate-rest 360
+              :turn-rate-speed 20    ;; locked heading during dash
+              :turn-speed-threshold 0.5}
    ,})
+
+(defn random-drive-train []
+  (rand-nth (keys (dissoc drive-train-movement :infantry))))
+
+(defn effective-drive-train [{:keys [chassis drive-train]
+                              :or {chassis :medium drive-train :standard}}]
+  (let [base-drive-train (drive-train-movement drive-train)
+        {:keys [speed-mul accel-mul turn-mul]} (peep/chassis-size-speed-modifier chassis)]
+    {:max-speed (* (:max-speed base-drive-train) speed-mul)
+     :acceleration (* (:acceleration base-drive-train) accel-mul)
+     :deceleration (* (:deceleration base-drive-train) accel-mul)
+     :turn-rate-rest (* (:turn-rate-rest base-drive-train) turn-mul)
+     :turn-rate-speed (* (:turn-rate-speed base-drive-train) turn-mul)
+     :turn-speed-threshold (:turn-speed-threshold base-drive-train)}))
 
 (defn normalise-angle
   "normalise angle to [-pi, pi]"
@@ -51,13 +79,12 @@
 
 (defn movement-drive-train [entity]
   (if (:mech entity)
-    (get-in entity [:mech :drive-train] :standard)
+    (effective-drive-train (:mech entity))
     ;; add support for leaving the mech
-    :infantry))
+    (drive-train-movement :infantry)))
 
 (defn step-physics [entity grid dt]
-  (let [drive-train-type (movement-drive-train entity)
-        {:keys [max-speed acceleration deceleration] :as props} (drive-train-movement drive-train-type)
+  (let [{:keys [max-speed acceleration deceleration] :as props} (movement-drive-train entity)
 
         speed (or (:speed entity) 0.0)
         heading (or (:heading entity) 0.0)
