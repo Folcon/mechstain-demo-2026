@@ -1,10 +1,7 @@
-(ns inkstain.systems.combat)
+(ns inkstain.systems.combat
+  (:require [inkstain.math :refer [distance]]))
 
 
-
-
-(defn distance [[x1 y1] [x2 y2]]
-  (Math/sqrt (+ (Math/pow (- x2 x1) 2) (Math/pow (- y2 y1) 2))))
 
 (defn find-nearest-hostile [pos hostiles]
   (when (seq hostiles)
