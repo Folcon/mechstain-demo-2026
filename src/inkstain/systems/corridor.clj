@@ -1,6 +1,7 @@
 (ns inkstain.systems.corridor
   (:require [inkstain.systems.grid :as grid]
-            [inkstain.math :refer [distance]]))
+            [inkstain.math :refer [distance]]
+            [inkstain.systems.movement :as movement]))
 
 
 
@@ -189,3 +190,70 @@
        :target target
        :curvature curvature
        :distance-to-path distance})))
+
+
+(defn step-corridor-steering
+  "kinematically-aware path following, we read the smoothed path as a corridor and outputs heading+speed appropriate for the entity's chassis"
+  [entity dt]
+  (let [path (:path entity)]
+    (if (or (not= (:state entity) :moving)
+          (nil? path)
+          (< (count path) 2))
+      ;; not moving or no valid path
+      entity
+
+      (let [;; chassis properties
+            drive-train-props (movement/movement-drive-train entity)
+            {:keys [max-speed deceleration]} drive-train-props
+            speed (or (:speed entity) 0.0)
+
+            ;; lookahead from chassis kinematics, ie how far do we need to look forwards to get enough warning that we need to turn
+            turn-rate (movement/get-turn-rate drive-train-props speed)
+            base-lookahead 1.5
+            lookahead-dist (+ base-lookahead
+                             (if (> turn-rate 0.01)
+                               (/ speed turn-rate)
+                               0.0))
+
+            ;; query corridor, where's our target?
+            corridor (query-corridor path (:pos entity) lookahead-dist)]
+
+        (if (nil? corridor)
+          entity
+
+          (let [[px py] (:pos entity)
+                [tx ty] (:target corridor)
+
+                ;; desired heading toward lookahead target
+                desired-heading (Math/atan2 (- ty py) (- tx px))
+
+                ;; curvature braking, slow down for upcoming turns
+                curvature-factor (- 1.0 (* (/ (:curvature corridor) Math/PI) 0.7))
+
+                ;; arrival braking, slow down the closer we are to the target
+                [fx fy] (peek path)
+                dx (- fx px) dy (- fy py)
+                dist-to-end (Math/sqrt (+ (* dx dx) (* dy dy)))
+                arrival-factor (if (> deceleration 0.01)
+                                 (let [brake-dist (/ (* speed speed)
+                                                    (* 2.0 deceleration))]
+                                   (min 1.0 (/ dist-to-end (max brake-dist 0.5))))
+                                 1.0)
+
+                ;; locomotion urgency
+                job-type (get-in entity [:job :type])
+                urgency (get movement/job-locomotion job-type :run)
+                urgency-mul (get movement/locomotion-speed urgency 1.0)
+
+                ;; final desired speed
+                desired-speed (* max-speed urgency-mul
+                                (min curvature-factor arrival-factor))
+
+                ;; are we there yet?
+                arrival-dist (max 0.5 (* speed dt 2))]
+
+            (if (<= dist-to-end arrival-dist)
+              (assoc entity :state :idle :target-speed 0.0 :path nil)
+              (assoc entity
+                :target-heading desired-heading
+                :target-speed desired-speed))))))))
