@@ -3,6 +3,7 @@
             [inkstain.state :as state]
             [inkstain.systems.grid :as grid]
             [inkstain.input :as input]
+            [inkstain.math :as math]
             [inkstain.systems.collision :as collision]
             [inkstain.systems.pathfinding :as pathfinding]
             [inkstain.systems.corridor :as corridor]
@@ -74,15 +75,15 @@
           (if (not (combat/alive? ally))
             ally  ;; dead/dying - don't touch
             (let [[ax ay] (:pos ally)
-                  player-dist (combat/distance [px py] [ax ay])
+                  player-dist (math/distance [px py] [ax ay])
                   [tx ty] (or (:last-target ally) [px py])
-                  player-moved-dist (combat/distance [px py] [tx ty])
+                  player-moved-dist (math/distance [px py] [tx ty])
                   timer (- (or (:repath-timer ally) 0) dt)
 
                   nearest-enemy (combat/find-nearest-hostile [ax ay]
                                   (filter combat/alive? (:enemies state)))
                   enemy-dist (when nearest-enemy
-                               (combat/distance [ax ay] (:pos nearest-enemy)))
+                               (math/distance [ax ay] (:pos nearest-enemy)))
                   melee-range? (and enemy-dist (<= enemy-dist (:attack-range ally 1.5)))
 
                   ;; detection range
@@ -125,9 +126,9 @@
                            (assoc ally :repath-timer (max 0 timer)))
 
                          :defensive
-                         (let [ally-to-player (combat/distance [ax ay] [px py])
+                         (let [ally-to-player (math/distance [ax ay] [px py])
                                enemy-near-player? (and nearest-enemy
-                                                    (<= (combat/distance [px py] (:pos nearest-enemy))
+                                                    (<= (math/distance [px py] (:pos nearest-enemy))
                                                       3.0))]
                            (cond
                              ;; in melee range - fight
@@ -216,7 +217,7 @@
                                  :last-target [px py]))
                              :else (assoc ally :repath-timer (max 0 timer)))))]
               (if (combat/alive? ally)
-                (movement/step-movement ally dt)
+                (corridor/step-corridor-steering ally dt)
                 ally))))
         allies))))
 
@@ -240,7 +241,7 @@
                                   :repath-timer 1.5))
                               (assoc enemy :repath-timer timer))]
                   (if (combat/alive? enemy)
-                    (movement/step-movement enemy dt)
+                    (corridor/step-corridor-steering enemy dt)
                     enemy))))
         (:enemies state)))))
 
