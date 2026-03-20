@@ -104,7 +104,7 @@
                                  path (if raw-path (corridor/smooth-path grid raw-path) [])]
                              (assoc ally
                                :path (vec (or path []))
-                               :state (if path :moving :idle)
+                               :state (if (seq path) :moving :idle)
                                :repath-timer 0.5))
 
                            (or
@@ -118,7 +118,7 @@
                                  path (if raw-path (corridor/smooth-path grid raw-path) [])]
                              (assoc ally
                                :path (vec (or path []))
-                               :state (if path :moving :idle)
+                               :state (if (seq path) :moving :idle)
                                :repath-timer 0.75
                                :last-target [px py]))
 
@@ -142,7 +142,7 @@
                                    path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally
                                  :path (vec (or path []))
-                                 :state (if path :moving :idle)
+                                 :state (if (seq path) :moving :idle)
                                  :repath-timer 0.5
                                  :last-target [ex ey]))
                              ;; too far from player - return
@@ -156,7 +156,7 @@
                                    path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally
                                  :path (vec (or path []))
-                                 :state (if path :moving :idle)
+                                 :state (if (seq path) :moving :idle)
                                  :repath-timer 0.75
                                  :last-target [px py]))
                              :else (assoc ally :repath-timer (max 0 timer))))
@@ -184,7 +184,7 @@
                                               [(Math/round ^double ax) (Math/round ^double ay)]
                                               [(Math/round ^double ex) (Math/round ^double ey)])
                                    path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally :path (vec (or path [])) :state (if path :moving :idle)
+                               (assoc ally :path (vec (or path [])) :state (if (seq path) :moving :idle)
                                  :repath-timer 0.5))
 
                              ;; not flanking yet - move to flank position
@@ -202,7 +202,7 @@
                                               [(Math/round ^double ax) (Math/round ^double ay)]
                                               [fx fy])
                                    path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally :path (vec (or path [])) :state (if path :moving :idle)
+                               (assoc ally :path (vec (or path [])) :state (if (seq path) :moving :idle)
                                  :repath-timer 0.75))
                              (<= timer 0)
                              ;; no enemy — follow player
@@ -212,7 +212,7 @@
                                    path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally
                                  :path (vec (or path []))
-                                 :state (if path :moving :idle)
+                                 :state (if (seq path) :moving :idle)
                                  :repath-timer 0.75
                                  :last-target [px py]))
                              :else (assoc ally :repath-timer (max 0 timer)))))]
@@ -237,7 +237,7 @@
                                     path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                 (assoc enemy
                                   :path (vec (or path []))
-                                  :state (if path :moving :idle)
+                                  :state (if (seq path) :moving :idle)
                                   :repath-timer 1.5))
                               (assoc enemy :repath-timer timer))]
                   (if (combat/alive? enemy)
