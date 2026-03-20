@@ -91,15 +91,15 @@
 
         new-pos (let [rx (Math/round ^double new-x)
                       ry (Math/round ^double new-y)]
-                 (cond
-                   ;; target walkable, keep going
-                   (grid/walkable? grid rx ry) [new-x new-y]
-                   ;; slide along x or y
-                   (grid/walkable? grid (Math/round ^double px) ry) [px new-y]
-                   (grid/walkable? grid rx (Math/round ^double py)) [new-x py]
-                   ;; stop
-                   ;; TODO: Damage for slamming to a stop?
-                   :else [px py]))
+                  (cond
+                    ;; target walkable, keep going
+                    (grid/walkable? grid rx ry) [new-x new-y]
+                    ;; slide along x or y
+                    (grid/walkable? grid (Math/round ^double px) ry) [px new-y]
+                    (grid/walkable? grid rx (Math/round ^double py)) [new-x py]
+                    ;; stop
+                    ;; TODO: Damage for slamming to a stop?
+                    :else [px py]))
 
         ;; set facing for animation
         facing (heading->facing new-heading)]
