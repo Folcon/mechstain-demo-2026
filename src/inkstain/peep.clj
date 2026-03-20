@@ -8,8 +8,9 @@
    :pos pos              ;; grid position [x y]
    :max-speed 4.0        ;; tiles per second as a peep
 
-   ;; mech speed etc comes from chassis
-   :mech {:chassis :standard}    ;; :standard :charger :dash
+   ;; mech speed etc comes from drive-train
+   :mech {:chassis :medium           ;; :light :medium :heavy :assault
+          :drive-train :standard}    ;; :standard :charger :dash
    :speed 0.0            ;; tiles per second
    :target-speed 0.0     ;; how fast do you want to go
    :heading nil          ;; radians with 0 = east, pi/2 = south

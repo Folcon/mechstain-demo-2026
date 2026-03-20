@@ -11,7 +11,7 @@
       (< deg 225) :west
       :else :north)))
 
-(def chassis-movement
+(def drive-train-movement
   {;; peep not in a mech
    :infantry  {:max-speed 2.5
                :acceleration 20.0
@@ -38,9 +38,9 @@
 
 (defn get-turn-rate
   "turn rate in radians/sec based on current speed"
-  [chassis-props speed]
+  [drive-train-props speed]
   (let [{:keys [turn-rate-rest turn-rate-speed
-                turn-speed-threshold max-speed]} chassis-props
+                turn-speed-threshold max-speed]} drive-train-props
         ;; lerp factor, 0 at rest, 1 at max speed
         t (if (> max-speed turn-speed-threshold)
             (min 1.0 (/ (max 0 (- speed turn-speed-threshold))
@@ -49,15 +49,15 @@
     (Math/toRadians (+ (* (- 1.0 t) turn-rate-rest)
                       (* t turn-rate-speed)))))
 
-(defn movement-chassis [entity]
+(defn movement-drive-train [entity]
   (if (:mech entity)
-    (get-in entity [:mech :chassis] :standard)
+    (get-in entity [:mech :drive-train] :standard)
     ;; add support for leaving the mech
     :infantry))
 
 (defn step-physics [entity grid dt]
-  (let [chassis-type (movement-chassis entity)
-        {:keys [max-speed acceleration deceleration] :as props} (chassis-movement chassis-type)
+  (let [drive-train-type (movement-drive-train entity)
+        {:keys [max-speed acceleration deceleration] :as props} (drive-train-movement drive-train-type)
 
         speed (or (:speed entity) 0.0)
         heading (or (:heading entity) 0.0)
@@ -162,7 +162,7 @@
               job-type (get-in peep [:job :type])
               ;; TODO: Add combat based urgency as well to flesh out combat
               urgency (get job-locomotion job-type :run)
-              max-speed (or (-> peep :mech :chassis chassis-movement :max-speed)
+              max-speed (or (-> peep :mech :drive-train drive-train-movement :max-speed)
                           (:max-speed peep))
               effective-speed (* max-speed (get locomotion-speed urgency 1.0))
 

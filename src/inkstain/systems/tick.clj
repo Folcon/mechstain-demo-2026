@@ -13,7 +13,7 @@
 
 (defn tick-player-input [state {:keys [held controller dt]}]
   (let [;; pixels per second
-        max-speed (or (-> state :player :mech :chassis movement/chassis-movement :max-speed)
+        max-speed (or (-> state :player :mech :drive-train movement/drive-train-movement :max-speed)
                     (-> state :player :max-speed))
 
         ;; keyboard
