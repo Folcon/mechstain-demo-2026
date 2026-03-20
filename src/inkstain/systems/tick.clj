@@ -5,6 +5,7 @@
             [inkstain.input :as input]
             [inkstain.systems.collision :as collision]
             [inkstain.systems.pathfinding :as pathfinding]
+            [inkstain.systems.corridor :as corridor]
             [inkstain.systems.movement :as movement]
             [inkstain.systems.combat :as combat]))
 
@@ -96,9 +97,10 @@
                            ;; enemy nearby - chase it
                            (and enemy-nearby? (<= timer 0))
                            (let [[ex ey] (:pos nearest-enemy)
-                                 path (pathfinding/try-search grid
-                                        [(Math/round ^double ax) (Math/round ^double ay)]
-                                        [(Math/round ^double ex) (Math/round ^double ey)])]
+                                 raw-path (pathfinding/try-search grid
+                                            [(Math/round ^double ax) (Math/round ^double ay)]
+                                            [(Math/round ^double ex) (Math/round ^double ey)])
+                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
                              (assoc ally
                                :path (vec (or path []))
                                :state (if path :moving :idle)
@@ -111,7 +113,8 @@
                              (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
                            (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
                                  ty (+ (Math/round ^double py) (- (rand-int 3) 1))
-                                 path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
+                                 raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
+                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
                              (assoc ally
                                :path (vec (or path []))
                                :state (if path :moving :idle)
@@ -132,9 +135,10 @@
                              ;; enemy near player - intercept
                              (and enemy-near-player? (<= timer 0))
                              (let [[ex ey] (:pos nearest-enemy)
-                                   path (pathfinding/try-search grid
-                                          [(Math/round ^double ax) (Math/round ^double ay)]
-                                          [(Math/round ^double ex) (Math/round ^double ey)])]
+                                   raw-path (pathfinding/try-search grid
+                                              [(Math/round ^double ax) (Math/round ^double ay)]
+                                              [(Math/round ^double ex) (Math/round ^double ey)])
+                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally
                                  :path (vec (or path []))
                                  :state (if path :moving :idle)
@@ -145,9 +149,10 @@
                              ;; pathfind back to player
                              (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
                                    ty (+ (Math/round ^double py) (- (rand-int 3) 1))
-                                   path (pathfinding/try-search grid
-                                          [(Math/round ^double ax) (Math/round ^double ay)]
-                                          [tx ty])]
+                                   raw-path (pathfinding/try-search grid
+                                              [(Math/round ^double ax) (Math/round ^double ay)]
+                                              [tx ty])
+                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally
                                  :path (vec (or path []))
                                  :state (if path :moving :idle)
@@ -174,9 +179,10 @@
 
                              ;; already flanking - close in on the enemy directly
                              (and flanking? enemy-nearby? (<= timer 0))
-                             (let [path (pathfinding/try-search grid
-                                          [(Math/round ^double ax) (Math/round ^double ay)]
-                                          [(Math/round ^double ex) (Math/round ^double ey)])]
+                             (let [raw-path (pathfinding/try-search grid
+                                              [(Math/round ^double ax) (Math/round ^double ay)]
+                                              [(Math/round ^double ex) (Math/round ^double ey)])
+                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally :path (vec (or path [])) :state (if path :moving :idle)
                                  :repath-timer 0.5))
 
@@ -191,16 +197,18 @@
                                    ;; clamp to grid
                                    fx (max 0 (min (dec (:width grid)) (Math/round ^double flank-x)))
                                    fy (max 0 (min (dec (:height grid)) (Math/round ^double flank-y)))
-                                   path (pathfinding/try-search grid
-                                          [(Math/round ^double ax) (Math/round ^double ay)]
-                                          [fx fy])]
+                                   raw-path (pathfinding/try-search grid
+                                              [(Math/round ^double ax) (Math/round ^double ay)]
+                                              [fx fy])
+                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally :path (vec (or path [])) :state (if path :moving :idle)
                                  :repath-timer 0.75))
                              (<= timer 0)
                              ;; no enemy — follow player
                              (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
                                    ty (+ (Math/round ^double py) (- (rand-int 3) 1))
-                                   path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])]
+                                   raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
+                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                (assoc ally
                                  :path (vec (or path []))
                                  :state (if path :moving :idle)
@@ -222,9 +230,10 @@
                 (let [[ex ey] (:pos enemy)
                       timer (- (or (:repath-timer enemy) 0) dt)
                       enemy (if (<= timer 0)
-                              (let [path (pathfinding/try-search grid
-                                           [(Math/round ^double ex) (Math/round ^double ey)]
-                                           [(Math/round ^double px) (Math/round ^double py)])]
+                              (let [raw-path (pathfinding/try-search grid
+                                               [(Math/round ^double ex) (Math/round ^double ey)]
+                                               [(Math/round ^double px) (Math/round ^double py)])
+                                    path (if raw-path (corridor/smooth-path grid raw-path) [])]
                                 (assoc enemy
                                   :path (vec (or path []))
                                   :state (if path :moving :idle)
