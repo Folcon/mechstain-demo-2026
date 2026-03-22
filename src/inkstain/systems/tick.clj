@@ -1,5 +1,6 @@
 (ns inkstain.systems.tick
-  (:require [inkstain.peep :as peep]
+  (:require [inkstain.config :as config]
+            [inkstain.peep :as peep]
             [inkstain.state :as state]
             [inkstain.systems.grid :as grid]
             [inkstain.input :as input]
@@ -80,7 +81,7 @@
                   player-moved-dist (math/distance [px py] [tx ty])
                   timer (- (or (:repath-timer ally) 0) dt)
 
-                  sensor-range 12.0  ;; tiles
+                  sensor-range config/sensor-range
                   in-sensor-range? (fn [e] (< (math/distance [ax ay] (:pos e)) sensor-range))
                   nearest-enemy (combat/find-nearest-hostile [px py]
                                   (filter (fn [e] (and (in-sensor-range? e) (combat/alive? e))) (:enemies state)))

@@ -13,3 +13,8 @@
 (def log-effects? debug?)
 
 (def default-tile-size 32)
+
+
+
+(def sensor-range 12.0)  ;; tiles
+
