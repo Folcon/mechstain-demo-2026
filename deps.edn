@@ -48,7 +48,7 @@
   ;;{:jvm-opts  ["-XstartOnFirstThread"]}
 
   :demo
-  {:main-opts   ["-m" "user"]
+  {:main-opts   ["-m" "demo"]
    :extra-paths ["dev" "test"]
    :extra-deps  {nrepl/nrepl                 {:mvn/version "1.5.0"}
                  io.github.tonsky/duti       {:git/sha "fc833a87a8687b67e66281e216eeee1ad6048168"
