@@ -9,7 +9,7 @@
   environ/environ                      {:mvn/version "1.2.0"}
 
   io.github.humbleui/types$clojure     {:mvn/version "0.2.0"}
-  io.github.humbleui/jwm               {:mvn/version "0.4.18" #_"0.4.24" :exclusions [io.github.humbleui/types]}
+  io.github.humbleui/jwm               {:local/root "checkouts/JWM" #_#_:mvn/version "0.4.18" #_"0.4.25" :exclusions [io.github.humbleui/types]}
   #_
   {:git/url "https://github.com/HumbleUI/JWM"
    :sha     "b3fecb126ab048dc91e22c224d3689acd5aabde2"
@@ -18,18 +18,18 @@
   ;;io.github.humbleui/skija-shared      {:local/root "libs/skija-shared-0.143.11.jar"}
   io.github.humbleui/skija-windows-x64 {;;:local/root "libs/skija-windows-x64-0.143.11.jar"
                                         ;;#_#_
-                                        :mvn/version "0.116.2" :exclusions [io.github.humbleui/types]}
+                                        :mvn/version "0.143.5" :exclusions [io.github.humbleui/types]}
   io.github.humbleui/skija-linux-x64   {;;:local/root "libs/skija-linux-x64-0.143.11.jar"
                                         ;;#_#_
-                                        :mvn/version "0.116.2" :exclusions [io.github.humbleui/types]}
+                                        :mvn/version "0.143.5" :exclusions [io.github.humbleui/types]}
   io.github.humbleui/skija-macos-x64   {;;:local/root "libs/skija-macos-x64-0.143.11.jar"
                                         ;;#_#_
-                                        :mvn/version "0.116.2" :exclusions [io.github.humbleui/types]}
+                                        :mvn/version "0.143.5" :exclusions [io.github.humbleui/types]}
   io.github.humbleui/skija-macos-arm64 {;;:local/root "libs/skija-macos-arm64-0.143.11.jar"
                                         ;;#_#_
-                                        :mvn/version "0.116.2" :exclusions [io.github.humbleui/types]}
-  io.github.humbleui/humbleui          #_{:local/root "checkouts/HumbleUI"}
-  ;;#_
+                                        :mvn/version "0.143.5" :exclusions [io.github.humbleui/types]}
+  io.github.humbleui/humbleui          {:local/root "checkouts/HumbleUI"}
+  #_
   {:git/url "https://github.com/HumbleUI/HumbleUI"
    :sha     "89d7ab0fffdd2f013f066a3bd766f0a7254412dc"
    :exclusions [io.github.humbleui/types]}

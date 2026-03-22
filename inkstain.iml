@@ -10,6 +10,7 @@
       <sourceFolder url="file://$MODULE_DIR$/dev" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/resources" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/classes" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
     </content>
@@ -19,11 +20,11 @@
     <orderEntry type="library" name="Deps: org.clojure/clojure:1.12.4" level="project" />
     <orderEntry type="library" name="Deps: lambdaisland/deep-diff2:2.11.216" level="project" />
     <orderEntry type="library" name="Deps: criterium:0.4.6" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/skija-shared:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-shared:0.143.5" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/core.specs.alpha:0.2.62" level="project" />
     <orderEntry type="library" name="Deps: lambdaisland/kaocha:1.91.1392" level="project" />
     <orderEntry type="library" name="Deps: guru.nidi/graphviz-java:0.18.1" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/skija-windows-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-windows-x64:0.143.5" level="project" />
     <orderEntry type="library" name="Deps: expound:0.9.0" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/spec.alpha:0.3.218" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/tools.cli:1.1.230" level="project" />
@@ -32,9 +33,8 @@
     <orderEntry type="library" name="Deps: lambdaisland/clj-diff:1.4.78" level="project" />
     <orderEntry type="library" name="Deps: tailrecursion/cljs-priority-map:1.2.1" level="project" />
     <orderEntry type="library" name="Deps: org.slf4j/jcl-over-slf4j:1.7.30" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/humbleui:89d7ab" level="project" />
     <orderEntry type="library" name="Deps: net.incongru.watchservice/barbary-watchservice:1.0" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/skija-linux-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-linux-x64:0.143.5" level="project" />
     <orderEntry type="library" name="Deps: io.github.tonsky/duti:fc833a" level="project" />
     <orderEntry type="library" name="Deps: com.github.tommyettinger/regexodus:0.1.14" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/google-closure-library:0.0-20151016-61277aea" level="project" />
@@ -49,12 +49,11 @@
     <orderEntry type="library" name="Deps: aero:1.1.6" level="project" />
     <orderEntry type="library" name="Deps: org.slf4j/jul-to-slf4j:1.7.30" level="project" />
     <orderEntry type="library" name="Deps: lambdaisland/tools.namespace:0.3.256" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/jwm:0.4.18" level="project" />
     <orderEntry type="library" name="Deps: mvxcvi/arrangement:2.1.0" level="project" />
     <orderEntry type="library" name="Deps: org.webjars.npm/viz.js-graphviz-java:2.1.3" level="project" />
     <orderEntry type="library" name="Deps: io.methvin/directory-watcher:0.17.3" level="project" />
     <orderEntry type="library" name="Deps: clj-tuple:0.2.2" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-x64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-x64:0.143.5" level="project" />
     <orderEntry type="library" name="Deps: io.github.tonsky/extend-clj:0.1.0" level="project" />
     <orderEntry type="library" name="Deps: io.github.tonsky/clj-reload:0.7.0" level="project" />
     <orderEntry type="library" name="Deps: org.mozilla/rhino:1.7R5" level="project" />
@@ -74,7 +73,7 @@
     <orderEntry type="library" name="Deps: org.clojure/core.rrb-vector:0.1.2" level="project" />
     <orderEntry type="library" name="Deps: net.java.dev.jna/jna:5.12.1" level="project" />
     <orderEntry type="library" name="Deps: org.clojure/tools.reader:1.3.6" level="project" />
-    <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-arm64:0.116.2" level="project" />
+    <orderEntry type="library" name="Deps: io.github.humbleui/skija-macos-arm64:0.143.5" level="project" />
     <orderEntry type="library" name="Deps: org.tcrawley/dynapath:1.1.0" level="project" />
     <orderEntry type="library" name="Deps: potemkin:0.4.5" level="project" />
     <orderEntry type="library" name="Deps: nrepl:1.5.0" level="project" />
@@ -89,5 +88,7 @@
     <orderEntry type="library" name="Deps: org.apache.commons/commons-exec:1.3" level="project" />
     <orderEntry type="library" name="Deps: meta-merge:1.0.0" level="project" />
     <orderEntry type="library" name="Deps: com.squidpony/squidlib-util:3.0.6" level="project" />
+    <orderEntry type="module" module-name="HumbleUI" />
+    <orderEntry type="module" module-name="JWM" />
   </component>
 </module>
