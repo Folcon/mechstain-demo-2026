@@ -9,10 +9,10 @@
   environ/environ                      {:mvn/version "1.2.0"}
 
   io.github.humbleui/types$clojure     {:mvn/version "0.2.0"}
-  io.github.humbleui/jwm               {:local/root "checkouts/JWM" #_#_:mvn/version "0.4.18" #_"0.4.25" :exclusions [io.github.humbleui/types]}
-  #_
-  {:git/url "https://github.com/HumbleUI/JWM"
-   :sha     "b3fecb126ab048dc91e22c224d3689acd5aabde2"
+  io.github.humbleui/jwm               #_{:local/root "checkouts/JWM" #_#_:mvn/version "0.4.18" #_"0.4.25" :exclusions [io.github.humbleui/types]}
+  ;;#_
+  {:git/url "https://github.com/Folcon/JWM"
+   :sha     "80456b68853a8a1d911acb1a891f6db33ec8524c"
    :deps/manifest :deps
    :exclusions [io.github.humbleui/types]}
   ;;io.github.humbleui/skija-shared      {:local/root "libs/skija-shared-0.143.11.jar"}
@@ -28,10 +28,10 @@
   io.github.humbleui/skija-macos-arm64 {;;:local/root "libs/skija-macos-arm64-0.143.11.jar"
                                         ;;#_#_
                                         :mvn/version "0.143.5" :exclusions [io.github.humbleui/types]}
-  io.github.humbleui/humbleui          {:local/root "checkouts/HumbleUI"}
-  #_
-  {:git/url "https://github.com/HumbleUI/HumbleUI"
-   :sha     "89d7ab0fffdd2f013f066a3bd766f0a7254412dc"
+  io.github.humbleui/humbleui          #_{:local/root "checkouts/HumbleUI"}
+  ;;#_
+  {:git/url "https://github.com/Folcon/HumbleUI"
+   :sha     "0a2ec35e3d1ca117368de5feaff5c694c83db941"
    :exclusions [io.github.humbleui/types]}
   com.badlogicgames.jamepad/jamepad    {:mvn/version "2.30.0.0"}
   ubergraph/ubergraph                  {:mvn/version "0.8.2"}
