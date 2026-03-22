@@ -5,6 +5,7 @@
    [clojure.java.io :as io]
 
    [inkstain.config :as config]
+   [inkstain.input :as input]
    [inkstain.state :as state]
    [inkstain.game :as game]
 
@@ -90,6 +91,9 @@
 
 (restore-durable-signal *example)
 
+(defn press-and-hold-settings [name]
+  (not (contains? #{"Game" "Tactical"} name)))
+
 (def examples
   [["Mechstain"
     [["Game" game/game-root]
@@ -149,6 +153,7 @@
    [ui/clickable
     {:on-click
      (fn [_]
+       (input/set-press-and-hold (press-and-hold-settings name))
        (reset! *example name))}
     (fn [state]
       [ui/rect {:paint {:fill
