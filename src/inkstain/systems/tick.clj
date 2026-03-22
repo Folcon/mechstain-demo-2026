@@ -9,6 +9,7 @@
             [inkstain.systems.pathfinding :as pathfinding]
             [inkstain.systems.corridor :as corridor]
             [inkstain.systems.movement :as movement]
+            [inkstain.systems.squad :as squad]
             [inkstain.systems.combat :as combat]))
 
 
@@ -69,7 +70,11 @@
 (defn tick-ally-movement [state dt]
   (let [allies (:allies state)
         [px py] (:pos (:player state))
-        grid (:grid state)]
+        grid (:grid state)
+        allies (squad/update-ally-slots
+                 allies [px py]
+                 (:tactical-mode state)
+                 (:enemies state))]
     (assoc state :allies
       (mapv
         (fn [ally]
@@ -116,8 +121,9 @@
                              (and (> player-dist 3.0) (<= timer 0))
                              ;; repath towards player who's moved
                              (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                           (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
-                                 ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                           (let [[tx ty] (get-in ally [:slot :pos])
+                                 tx (Math/round ^double tx)
+                                 ty (Math/round ^double ty)
                                  raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
                                  path (if raw-path (corridor/smooth-path grid raw-path) [])]
                              (assoc ally
@@ -152,8 +158,9 @@
                              ;; too far from player - return
                              (and (> ally-to-player 3.0) (<= timer 0))
                              ;; pathfind back to player
-                             (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
-                                   ty (+ (Math/round ^double py) (- (rand-int 3) 1))
+                             (let [[tx ty] (get-in ally [:slot :pos])
+                                   tx (Math/round ^double tx)
+                                   ty (Math/round ^double ty)
                                    raw-path (pathfinding/try-search grid
                                               [(Math/round ^double ax) (Math/round ^double ay)]
                                               [tx ty])
@@ -171,55 +178,52 @@
                            (assoc ally :state :idle :path [] :repath-timer (max 0 timer)))
 
                          :flank
-                         (let [[ex ey] (:pos nearest-enemy)
-                               ;; has the ally reached the flank side?
-                               flanking? (when nearest-enemy
-                                           (let [;; dot product, is ally on opposite side of enemy from player?
-                                                 dx-pe (- ex px) dy-pe (- ey py)    ;; player→enemy
-                                                 dx-ae (- ex ax) dy-ae (- ey ay)]   ;; ally→enemy
-                                             ;; if dot < 0, ally is on far side of enemy from player
-                                             (neg? (+ (* dx-pe dx-ae) (* dy-pe dy-ae)))))]
-                           (cond
-                             melee-range? (assoc ally :state :idle :path [])
+                         ;; Flanking has a complex logic chain, so I'll document it here for reference
+                         ;;  1. melee range -> stop and fight
+                         ;;  2. enemy nearby -> check distance to assigned flank slot, if within 1.5 tiles
+                         ;;    peep is in position and should close in on the enemy directly with shorter repath timer
+                         ;;    of 0.5s, if they're not in position yet, pathfind to the flank slot with longer timer of 0.75s
+                         ;;  3. no enemy -> pathfind to slot around the player
+                         ;;  4. tick timer down
+                         (cond
+                           melee-range? (assoc ally :state :idle :path [])
 
-                             ;; already flanking - close in on the enemy directly
-                             (and flanking? enemy-nearby? (<= timer 0))
-                             (let [raw-path (pathfinding/try-search grid
-                                              [(Math/round ^double ax) (Math/round ^double ay)]
-                                              [(Math/round ^double ex) (Math/round ^double ey)])
-                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally :path (vec (or path [])) :state (if (seq path) :moving :idle)
-                                 :repath-timer 0.5))
-
-                             ;; not flanking yet - move to flank position
-                             (and enemy-nearby? (<= timer 0))
-                             (let [;; point on opposite side of enemy from player
-                                   dx (- ex px) dy (- ey py)
-                                   dist (Math/sqrt (+ (* dx dx) (* dy dy)))
-                                   ;; normalise and extend 2 tiles past enemy
-                                   flank-x (+ ex (* (/ dx (max dist 0.1)) 2.0))
-                                   flank-y (+ ey (* (/ dy (max dist 0.1)) 2.0))
-                                   ;; clamp to grid
-                                   fx (max 0 (min (dec (:width grid)) (Math/round ^double flank-x)))
-                                   fy (max 0 (min (dec (:height grid)) (Math/round ^double flank-y)))
-                                   raw-path (pathfinding/try-search grid
-                                              [(Math/round ^double ax) (Math/round ^double ay)]
-                                              [fx fy])
-                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally :path (vec (or path [])) :state (if (seq path) :moving :idle)
-                                 :repath-timer 0.75))
-                             (<= timer 0)
-                             ;; no enemy — follow player
-                             (let [tx (+ (Math/round ^double px) (- (rand-int 3) 1))
-                                   ty (+ (Math/round ^double py) (- (rand-int 3) 1))
-                                   raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
-                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally
-                                 :path (vec (or path []))
-                                 :state (if (seq path) :moving :idle)
-                                 :repath-timer 0.75
-                                 :last-target [px py]))
-                             :else (assoc ally :repath-timer (max 0 timer)))))]
+                           ;; enemy nearby - move to flank position or close in
+                           (and enemy-nearby? (<= timer 0))
+                           (let [[sx sy] (get-in ally [:slot :pos])
+                                 ;; if close to flank slot, close in on enemy directly
+                                 slot-dist (when (and sx sy)
+                                             (math/distance [ax ay] [sx sy]))
+                                 ;; within 1.5 tiles of slot is in position so attack directly
+                                 in-position? (and slot-dist (< slot-dist 1.5))
+                                 ;; if in position, close in on enemy directly
+                                 ;;   otherwise, move to flank slot
+                                 [tx ty] (if in-position?
+                                           (:pos nearest-enemy)
+                                           (get-in ally [:slot :pos]))
+                                 tx (Math/round ^double tx)
+                                 ty (Math/round ^double ty)
+                                 raw-path (pathfinding/try-search grid
+                                            [(Math/round ^double ax) (Math/round ^double ay)]
+                                            [tx ty])
+                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
+                             (assoc ally
+                               :path (vec (or path []))
+                               :state (if (seq path) :moving :idle)
+                               :repath-timer (if in-position? 0.5 0.75)))
+                           (<= timer 0)
+                           ;; no enemy - follow player
+                           (let [[tx ty] (get-in ally [:slot :pos])
+                                 tx (Math/round ^double tx)
+                                 ty (Math/round ^double ty)
+                                 raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
+                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
+                             (assoc ally
+                               :path (vec (or path []))
+                               :state (if (seq path) :moving :idle)
+                               :repath-timer 0.75
+                               :last-target [px py]))
+                           :else (assoc ally :repath-timer (max 0 timer))))]
               (if (combat/alive? ally)
                 (corridor/step-corridor-steering ally dt)
                 ally))))
