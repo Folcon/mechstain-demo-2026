@@ -54,6 +54,14 @@ TODO: Look at:
 
 # Release
 ## To github
+- Commit messages as a oneliner since last tag
+```shell
+git log $(git describe --tags --abbrev=0)..HEAD --oneline
+```
+- Commit messages since last tag
+```shell
+git log $(git describe --tags --abbrev=0)..HEAD
+```
 - Create a tag:
   ```shell
   git tag v0.0.1 -a
