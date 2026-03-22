@@ -62,6 +62,10 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 ```shell
 git log $(git describe --tags --abbrev=0)..HEAD
 ```
+- View tag description
+```shell
+git tag -v v0.0.1
+```
 - Create a tag:
   ```shell
   git tag v0.0.1 -a
