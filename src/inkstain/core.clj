@@ -4,6 +4,7 @@
    [clojure.java.io :as io]
 
    [inkstain.config :as config]
+   [inkstain.input :as input]
    [inkstain.state :as state]
    [inkstain.game :as game]
 
@@ -67,5 +68,6 @@
            :on-event #'maybe-save-window-rect
            :exit-on-close? (if config/debug? false true)}
           (restore-window-rect))
-        *app)))
+        *app))
+    (input/set-press-and-hold false))
   @state/*window)

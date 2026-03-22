@@ -1,4 +1,5 @@
 (ns inkstain.input
+  (:require [io.github.humbleui.window :as window])
   (:import [com.studiohartman.jamepad ControllerManager ControllerState]))
 
 
@@ -44,3 +45,5 @@
 
 (defn dpad-right [controller-state]
   (.-dpadRightJustPressed ^ControllerState controller-state))
+
+(def set-press-and-hold window/set-press-and-hold)
