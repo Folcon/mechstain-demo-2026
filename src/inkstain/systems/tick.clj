@@ -80,8 +80,11 @@
                   player-moved-dist (math/distance [px py] [tx ty])
                   timer (- (or (:repath-timer ally) 0) dt)
 
-                  nearest-enemy (combat/find-nearest-hostile [ax ay]
-                                  (filter combat/alive? (:enemies state)))
+                  sensor-range 12.0  ;; tiles
+                  in-sensor-range? (fn [e] (< (math/distance [ax ay] (:pos e)) sensor-range))
+                  nearest-enemy (combat/find-nearest-hostile [px py]
+                                  (filter (fn [e] (and (in-sensor-range? e) (combat/alive? e))) (:enemies state)))
+
                   enemy-dist (when nearest-enemy
                                (math/distance [ax ay] (:pos nearest-enemy)))
                   melee-range? (and enemy-dist (<= enemy-dist (:attack-range ally 1.5)))
