@@ -5,6 +5,24 @@
 
 
 
+(def drive-train-doctrine
+  {:infantry  {:lookahead-scale     1.0   ;; multiplier
+               :curvature-brake     0.5   ;; how aggressively to slow for turns [0-1]
+               :path-tolerance      2.0}  ;; tiles off-path before correcting
+
+   :standard  {:lookahead-scale     1.0
+               :curvature-brake     0.7
+               :path-tolerance      1.5}
+
+   :charger   {:lookahead-scale     1.5   ;; looks far ahead
+               :curvature-brake     0.9   ;; brakes hard for turns, prefer full stop and turn
+               :path-tolerance      1.0}  ;; stays close to corridor
+
+   :dasher    {:lookahead-scale     0.8   ;; shorter lookahead, relying on stopping to turn
+               :curvature-brake     0.5   ;; moderate braking, can decel fast anyway
+               :path-tolerance      2.5}}) ;; wide tolerance, able to cut corners freely
+
+
 (defn walkable-line?
   "check if a straight line between two points crosses only walkable tiles
    sampling at ~0.5 tile intervals along the line"
@@ -202,7 +220,12 @@
       ;; not moving or no valid path
       entity
 
-      (let [;; chassis properties
+      (let [drive-train-type (get-in entity [:mech :drive-train] :standard)
+            doctrine (get drive-train-doctrine drive-train-type
+                       (drive-train-doctrine :standard))
+            {:keys [lookahead-scale curvature-brake path-tolerance]} doctrine
+
+            ;; chassis properties
             drive-train-props (movement/movement-drive-train entity)
             {:keys [max-speed deceleration]} drive-train-props
             speed (or (:speed entity) 0.0)
@@ -210,10 +233,10 @@
             ;; lookahead from chassis kinematics, ie how far do we need to look forwards to get enough warning that we need to turn
             turn-rate (movement/get-turn-rate drive-train-props speed)
             base-lookahead 1.5
-            lookahead-dist (+ base-lookahead
-                             (if (> turn-rate 0.01)
-                               (/ speed turn-rate)
-                               0.0))
+            kinematic-lookahead (if (> turn-rate 0.01)
+                                  (/ speed turn-rate)
+                                  0.0)
+            lookahead-dist (+ base-lookahead (* kinematic-lookahead lookahead-scale))
 
             ;; query corridor, where's our target?
             corridor (query-corridor path (:pos entity) lookahead-dist)]
@@ -227,8 +250,23 @@
                 ;; desired heading toward lookahead target
                 desired-heading (Math/atan2 (- ty py) (- tx px))
 
+                ;; drift correction
+                ;;   if too far off-path, steer back toward projection
+                drift (:distance-to-path corridor)
+                desired-heading' (if (> drift path-tolerance)
+                                   ;; blend toward the projection point to get back on track
+                                   (let [[prx pry] (:projection corridor)
+                                         correction-heading (Math/atan2 (- pry py) (- prx px))
+                                         ;; blend factor, 0 at tolerance, 1 at 2x tolerance
+                                         blend (min 1.0 (/ (- drift path-tolerance) path-tolerance))
+                                         ;; weighted average of desired and correction headings
+                                         diff (movement/angle-diff desired-heading correction-heading)
+                                         blended (+ desired-heading (* blend diff))]
+                                     (movement/normalise-angle blended))
+                                   desired-heading)
+
                 ;; curvature braking, slow down for upcoming turns
-                curvature-factor (- 1.0 (* (/ (:curvature corridor) Math/PI) 0.7))
+                curvature-factor (- 1.0 (* (/ (:curvature corridor) Math/PI) curvature-brake))
 
                 ;; arrival braking, slow down the closer we are to the target
                 [fx fy] (peek path)
@@ -255,5 +293,5 @@
             (if (<= dist-to-end arrival-dist)
               (assoc entity :state :idle :target-speed 0.0 :path nil)
               (assoc entity
-                :target-heading desired-heading
+                :target-heading desired-heading'
                 :target-speed desired-speed))))))))
