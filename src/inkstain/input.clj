@@ -234,7 +234,10 @@
                                  :dpad-right (dpad-right controller)
                                  nil)]
                 :when pressed?]
-          (handler @state/*state)))
+          (handler @state/*state))
+
+        (when-let [stick-handler (get handlers :left-stick)]
+          (stick-handler [(left-stick-x controller) (left-stick-y controller)])))
       (when cs
         (window/request-frame window)))))
 

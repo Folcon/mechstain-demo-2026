@@ -3,6 +3,7 @@
             [inkstain.state :as state]
             [inkstain.fns :as fns]
             [inkstain.input :as input]
+            [inkstain.team-comp :as team-comp]
             [inkstain.render :as render]))
 
 
@@ -13,17 +14,18 @@
     [ui/center
      [ui/label {:font-weight :bold} "MECHSTAIN"]]
     [ui/button {:on-click (fn [_]
-                            (reset! state/*state (render/init-state))
-                            (input/push-focus! :playing))}
+                            (team-comp/init!)
+                            (input/push-focus! :team-comp))}
      "Start"]
     [ui/button {:on-click fns/maybe-quit}
      "Quit"]]])
 
 (input/register-handlers! :menu
-  {:a-button   (fn [_state]
-                 (reset! state/*state (render/init-state))
-                 (input/push-focus! :playing))
+  {:a-button   (fn [_]
+                 (team-comp/init!)
+                 (input/push-focus! :team-comp))
    :b-button   (fn [state] (fns/maybe-quit state))})
+
 
 (ui/defcomp pause-screen []
   [ui/stack
@@ -65,15 +67,17 @@
    {:on-key-down (fn [e]
                    (when (= :escape (:key e))
                      (case (peek @state/*screen)
-                       :playing (input/push-focus! :paused)
-                       :paused  (input/pop-focus!)
+                       :playing   (input/push-focus! :paused)
+                       :paused    (input/pop-focus!)
+                       :team-comp (input/pop-focus!)
                        nil)))}
    (do (println :*screen @state/*screen)
      (case (peek @state/*screen)
-       :menu    [menu-screen]
-       :playing [render/ui]
-       :paused  [pause-screen]
-       :dead    [death-screen]))])
+       :menu      [menu-screen]
+       :team-comp [team-comp/ui]
+       :playing   [render/ui]
+       :paused    [pause-screen]
+       :dead      [death-screen]))])
 
 (input/register-handlers! :playing
   {:start   (fn [_] (input/swap-focus! :paused))})

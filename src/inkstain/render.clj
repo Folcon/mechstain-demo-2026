@@ -6,6 +6,7 @@
    [io.github.humbleui.window :as window]
    [inkstain.config :as config]
    [inkstain.state :as state]
+   [inkstain.persistence :as persistence]
    [inkstain.systems.grid :as grid]
    [inkstain.camera :as camera]
    [inkstain.input :as input]
@@ -19,27 +20,32 @@
 
 
 
-(defn init-state []
-  (reset! state/*state
-    {:last-render (System/nanoTime)
-     :camera      (camera/create-camera)
-     :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
-     :player      (-> (peep/make-player [5 5])
-                    (peep/make-mech :medium :standard))
-     :allies      [(-> (peep/make-peep [4 4] :ally) (peep/make-mech :light :dasher))
-                   (-> (peep/make-peep [6 4] :ally) (peep/make-mech :light :standard))
-                   (-> (peep/make-peep [4 6] :ally) (peep/make-mech :heavy :standard))
-                   (-> (peep/make-peep [6 6] :ally) (peep/make-mech :medium :charger))
-                   (-> (peep/make-peep [5 4] :ally) (peep/make-mech :medium :standard))]
+(defn init-state
+  ([] (init-state persistence/default-comp))
+  ([{:keys [player allies] :as _team-comp}]
+   (let [spawn-offsets [[4 4] [6 4] [4 6] [6 6] [5 4]]
+         enabled-allies (filterv #(:enabled? % true) allies)]
+     (reset! state/*state
+       {:last-render (System/nanoTime)
+        :camera      (camera/create-camera)
+        :grid        (grid/scatter-water (grid/make-grid 300 200) 400)
+        :player      (-> (peep/make-player [5 5])
+                       (peep/make-mech (:chassis player) (:drive-train player)))
+        :allies      (into []
+                       (map-indexed
+                         (fn [i {:keys [chassis drive-train]}]
+                           (-> (peep/make-peep (nth spawn-offsets i [5 5]) :ally)
+                             (peep/make-mech chassis drive-train))))
+                       enabled-allies)
 
-     :enemies []
-     :spawn-timer 0.0
-     :spawn-interval 3.0
+        :enemies []
+        :spawn-timer 0.0
+        :spawn-interval 3.0
 
-     :tactical-mode :aggressive
+        :tactical-mode :aggressive
 
-     :score {:kills 0 :scrap 0 :time-alive 0}
-     ,}))
+        :score {:kills 0 :scrap 0 :time-alive 0}
+        ,}))))
 
 (defn lch->rgb ^Color4f [c]
   (-> c
