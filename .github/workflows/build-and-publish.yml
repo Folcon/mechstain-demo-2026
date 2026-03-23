@@ -87,6 +87,10 @@ jobs:
         if: matrix.platform == 'linux'
         run: sudo apt-get install -y cmake ninja-build libx11-dev libxrandr-dev libxcursor-dev libxi-dev libgl-dev
 
+      - name: Setup MSVC (Windows)
+        if: matrix.platform == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Resolve dependencies
         shell: bash
         run: clojure -Spath > /dev/null 2>&1 || true
