@@ -33,3 +33,11 @@
     (save-data! (-> data
                   (assoc-in [:presets preset-name] comp)
                   (assoc :last-used preset-name)))))
+
+(def max-custom-presets 3)
+
+(defn next-preset-name [presets]
+  (let [existing (disj (set (keys presets)) "default")]
+    (when (< (count existing) max-custom-presets)
+      (first (remove existing
+               (map #(str "custom-" %) (range 1 (inc max-custom-presets))))))))

@@ -23,7 +23,7 @@
 
 (def chassis-options [:light :medium :heavy :assault])
 (def drive-train-options [:standard :charger :dasher])
-(def row-cols [1 1 3 3 3 3 3 1 3])
+(def row-cols [1 1 3 3 3 3 3 1 4])
 
 
 (defn cycle-option [current options dir]
@@ -53,13 +53,9 @@
           2 (swap! *team-comp update-in [:comp :allies i :enabled?] not)))
 
       (= row 7)
-      (let [{:keys [preset-name preset-names]} @*team-comp
-            new-name (cycle-option preset-name preset-names dir)
-            data (persistence/load-data)
-            new-comp (get (:presets data) new-name persistence/default-comp)]
-        (swap! *team-comp assoc
-          :preset-name new-name
-          :comp new-comp)))))
+      (let [{:keys [preset-names]} @*team-comp
+            new-name (cycle-option (:preset-name @*team-comp) preset-names dir)]
+        (swap! *team-comp assoc :preset-name new-name)))))
 
 (defn highlight-and-cycle! [cursor]
   (swap! *team-comp assoc :cursor cursor)
@@ -91,16 +87,26 @@
         nil))))
 
 (defn activate-deploy! []
-  (let [{:keys [comp preset-name]} @*team-comp]
-    (persistence/save-preset! preset-name comp)
+  (let [{:keys [comp]} @*team-comp]
     (render/init-state comp)
     (input/swap-focus! :playing)))
 
 (defn activate-save! []
   (let [{:keys [comp preset-name]} @*team-comp]
-    (persistence/save-preset! preset-name comp)
-    (swap! *team-comp assoc :preset-names
-      (vec (sort (keys (:presets (persistence/load-data))))))))
+    (if (= preset-name "default")
+      (when-let [new-name (persistence/next-preset-name (:presets (persistence/load-data)))]
+        (persistence/save-preset! new-name comp)
+        (let [names (vec (sort (keys (:presets (persistence/load-data)))))]
+          (swap! *team-comp assoc
+            :preset-name new-name
+            :preset-names names)))
+      (persistence/save-preset! preset-name comp))))
+
+(defn activate-load! []
+  (let [{:keys [preset-name]} @*team-comp
+        data (persistence/load-data)
+        comp (get (:presets data) preset-name persistence/default-comp)]
+    (swap! *team-comp assoc :comp comp)))
 
 (defn activate! []
   (let [{:keys [cursor]} @*team-comp
@@ -109,8 +115,9 @@
       (<= 0 row 7) (cycle-at-cursor! 1)
       (= row 8) (case col
                   0 (activate-save!)
-                  1 (activate-deploy!)
-                  2 (input/pop-focus!)))))
+                  1 (activate-load!)
+                  2 (activate-deploy!)
+                  3 (input/pop-focus!)))))
 
 (defn selector [cr cc row col value on-click]
   [ui/clickable {:on-click (fn [_] (on-click))}
@@ -228,8 +235,9 @@
              [ui/padding {:top 16}
               [ui/row {:gap 12}
                (button-cell cr cc 8 0 "Save" activate-save!)
-               (button-cell cr cc 8 1 "Deploy" activate-deploy!)
-               (button-cell cr cc 8 2 "Back" input/pop-focus!)]]
+               (button-cell cr cc 8 1 "Load" activate-load!)
+               (button-cell cr cc 8 2 "Deploy" activate-deploy!)
+               (button-cell cr cc 8 3 "Back" input/pop-focus!)]]
              [ui/padding {:top 12}
               [ui/row {:gap 12}
                [ui/label {:paint {:fill 0xFFAAAAAA}}
