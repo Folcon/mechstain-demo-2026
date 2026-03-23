@@ -95,7 +95,7 @@
                      gradient
                      hovered?]
   :extends ui/AWrapperNode
-  protocols/IComponent  
+  protocols/IComponent
   (-draw-impl [_ ctx bounds container-size viewport ^Canvas canvas]
     (let [{:keys [mouse-pos scale]} ctx
           [_ opts _] (ui/parse-element element)
