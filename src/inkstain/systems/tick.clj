@@ -112,7 +112,7 @@
                              (and (> player-dist 3.0) (<= timer 0))
                              ;; repath towards player who's moved
                              (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                           (let [[tx ty] (get-in ally [:slot :pos])
+                           (let [[tx ty] (squad/resolve-slot ally [px py] (:enemies state))
                                  tx (Math/round ^double tx)
                                  ty (Math/round ^double ty)
                                  raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
@@ -149,7 +149,7 @@
                              ;; too far from player - return
                              (and (> ally-to-player 3.0) (<= timer 0))
                              ;; pathfind back to player
-                             (let [[tx ty] (get-in ally [:slot :pos])
+                             (let [[tx ty] (squad/resolve-slot ally [px py] (:enemies state))
                                    tx (Math/round ^double tx)
                                    ty (Math/round ^double ty)
                                    raw-path (pathfinding/try-search grid
@@ -181,7 +181,7 @@
 
                            ;; enemy nearby - move to flank position or close in
                            (and enemy-nearby? (<= timer 0))
-                           (let [[sx sy] (get-in ally [:slot :pos])
+                           (let [[sx sy] (squad/resolve-slot ally [px py] (:enemies state))
                                  ;; if close to flank slot, close in on enemy directly
                                  slot-dist (when (and sx sy)
                                              (math/distance [ax ay] [sx sy]))
@@ -191,7 +191,7 @@
                                  ;;   otherwise, move to flank slot
                                  [tx ty] (if in-position?
                                            (:pos nearest-enemy)
-                                           (get-in ally [:slot :pos]))
+                                           (squad/resolve-slot ally [px py] (:enemies state)))
                                  tx (Math/round ^double tx)
                                  ty (Math/round ^double ty)
                                  raw-path (pathfinding/try-search grid
@@ -204,7 +204,7 @@
                                :repath-timer (if in-position? 0.5 0.75)))
                            (<= timer 0)
                            ;; no enemy - follow player
-                           (let [[tx ty] (get-in ally [:slot :pos])
+                           (let [[tx ty] (squad/resolve-slot ally [px py] (:enemies state))
                                  tx (Math/round ^double tx)
                                  ty (Math/round ^double ty)
                                  raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])

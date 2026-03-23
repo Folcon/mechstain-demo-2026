@@ -6,32 +6,32 @@
 
 
 (defn ring-slots
-  "generate n evenly-spaced positions in a ring around anchor"
-  [anchor radius n]
-  (let [[ax ay] anchor]
-    (mapv (fn [i]
-            (let [angle (* (/ (* 2.0 Math/PI) n) i)]
-              [(+ ax (* radius (Math/cos angle)))
-               (+ ay (* radius (Math/sin angle)))]))
-      (range n))))
+  "generate n evenly-spaced positions in a ring"
+  [radius n]
+  (mapv (fn [i]
+          {:radius radius
+           :angle (* (/ (* 2.0 Math/PI) n) i)})
+    (range n)))
 
 (defn arc-slots
-  "generate n positions in an arc facing a facing-angle, centered on anchor"
-  [anchor radius n facing-angle spread]
-  (let [[ax ay] anchor
-        half-spread (/ spread 2.0)
+  "generate n positions in an arc facing a facing-angle"
+  [radius n facing-angle spread]
+  (let [half-spread (/ spread 2.0)
         start (- facing-angle half-spread)]
     (mapv (fn [i]
-            (let [angle (+ start (* (/ spread (max 1 (dec n))) i))]
-              [(+ ax (* radius (Math/cos angle)))
-               (+ ay (* radius (Math/sin angle)))]))
+            {:radius radius
+             :angle (+ start (* (/ spread (max 1 (dec n))) i))})
       (range n))))
 
 (defn assign-slots
   "assign entities to slot positions, each entity gets the nearest unclaimed slot
    returns {entity-id -> slot-position}"
-  [entities slots]
-  (let [slots (vec slots)]
+  [entities slots anchor-pos]
+  (let [slots (vec slots)
+        resolved-slots (mapv (fn [{:keys [radius angle] :as _slot}]
+                               [(+ (first anchor-pos) (* radius (Math/cos angle)))
+                                (+ (second anchor-pos) (* radius (Math/sin angle)))])
+                         slots)]
     (loop [remaining
            (sort-by
              (fn [e]
@@ -40,7 +40,7 @@
                      dists (map (fn [[sx sy]]
                                   (+ (* (- sx ex) (- sx ex))
                                     (* (- sy ey) (- sy ey))))
-                             slots)]
+                             resolved-slots)]
                  (apply min dists)))
              entities)
            claimed #{}
@@ -54,14 +54,14 @@
                      (fn [best idx]
                        (if (contains? claimed idx)
                          best
-                         (let [[sx sy] (slots idx)
+                         (let [[sx sy] (resolved-slots idx)
                                d (+ (* (- sx ex) (- sx ex))
                                    (* (- sy ey) (- sy ey)))]
                            (if (or (nil? best) (< d (:dist best)))
                              {:idx idx :dist d}
                              best))))
                      nil
-                     (range (count slots)))
+                     (range (count resolved-slots)))
               slot-idx (:idx best)]
           (recur (rest remaining)
             (conj claimed slot-idx)
@@ -108,48 +108,57 @@
                                         (fn [e] (and (in-sensor-range? e) (combat/alive? e)))
                                         enemies)))
 
-                    slots (case tactical-mode
-                            :aggressive
-                            (if nearest-enemy
-                              ;; surround the nearest enemy
-                              (ring-slots (:pos nearest-enemy) surround-radius n)
-                              ;; no enemies, ring around player
-                              (ring-slots anchor-pos follow-radius n))
+                    [slots anchor-type anchor-id]
+                    (case tactical-mode
+                      :aggressive
+                      (if nearest-enemy
+                        ;; surround the nearest enemy
+                        [(ring-slots surround-radius n) :enemy (:id nearest-enemy)]
+                        ;; no enemies, ring around player
+                        [(ring-slots follow-radius n) :player nil])
 
-                            :defensive
-                            (ring-slots anchor-pos defensive-radius n)
+                      :defensive
+                      [(ring-slots defensive-radius n) :player nil]
 
-                            :hold
-                            (let [facing (if nearest-enemy
-                                           (let [[ax ay] anchor-pos
-                                                 [ex ey] (:pos nearest-enemy)]
-                                             (Math/atan2 (- ey ay) (- ex ax)))
-                                           0.0)]
-                              (arc-slots anchor-pos hold-radius n facing hold-spread))
+                      :hold
+                      (let [facing (if nearest-enemy
+                                     (let [[ax ay] anchor-pos
+                                           [ex ey] (:pos nearest-enemy)]
+                                       (Math/atan2 (- ey ay) (- ex ax)))
+                                     0.0)]
+                        [(arc-slots hold-radius n facing hold-spread) :player nil])
 
-                            :flank
-                            (if nearest-enemy
-                              (let [[ax ay] anchor-pos
-                                    [ex ey] (:pos nearest-enemy)
-                                    facing (Math/atan2 (- ey ay) (- ex ax))]
-                                ;; arc on far side of enemy, 270 degree spread
-                                ;;   center faces AWAY from player
-                                (arc-slots (:pos nearest-enemy) surround-radius n
-                                  (+ facing Math/PI)
-                                  (* Math/PI 1.5)))
-                              ;; no enemies, fall back to follow ring
-                              (ring-slots anchor-pos follow-radius n))
+                      :flank
+                      (if nearest-enemy
+                        (let [[ax ay] anchor-pos
+                              [ex ey] (:pos nearest-enemy)
+                              facing (Math/atan2 (- ey ay) (- ex ax))]
+                          ;; arc on far side of enemy, 270 degree spread
+                          ;;   center faces AWAY from player
+                          [(arc-slots surround-radius n
+                             (+ facing Math/PI)
+                             (* Math/PI 1.5))
+                           :enemy (:id nearest-enemy)])
+                        ;; no enemies, fall back to follow ring
+                        [(ring-slots follow-radius n) :player nil])
 
-                            ;; default fallback
-                            (ring-slots anchor-pos follow-radius n))
+                      ;; default fallback
+                      [(ring-slots follow-radius n) :player nil])
+
+                    dynamic-anchor-pos (if (= anchor-type :enemy)
+                                         (:pos nearest-enemy)
+                                         anchor-pos)
 
                     ;; assign each ally to a slot
-                    assignments (assign-slots alive-allies slots)]
+                    assignments (assign-slots alive-allies slots dynamic-anchor-pos)]
 
                 ;; attach slot to each ally
                 (mapv (fn [ally]
                         (if-let [slot-pos (get assignments (:id ally))]
-                          (assoc ally :slot {:pos slot-pos :anchor anchor-pos})
+                          (assoc ally :slot (merge slot-pos
+                                              {:anchor-type anchor-type}
+                                              (when anchor-id
+                                                {:anchor-id anchor-id})))
                           ally))
                   alive-allies)))
 
@@ -161,3 +170,17 @@
                   (get alive-by-id (:id ally))
                   ally))
           allies)))))
+
+(defn resolve-slot [ally player-pos enemies]
+  (when-let [slot (:slot ally)]
+    (let [anchor-pos (case (:anchor-type slot)
+                       :player player-pos
+                       :enemy (when-let [e (first (filter #(= (:id %)
+                                                             (:anchor-id slot)) enemies))]
+                                (:pos e))
+                       player-pos)
+          r (:radius slot)
+          a (:angle slot)]
+      (when anchor-pos
+        [(+ (first anchor-pos) (* r (Math/cos a)))
+         (+ (second anchor-pos) (* r (Math/sin a)))]))))
