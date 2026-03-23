@@ -45,7 +45,9 @@
      [ui/center
       (into [ui/column {:gap 20}
              [ui/center
-              [ui/label {:font-weight :bold} "MECHSTAIN"]]]
+              [ui/label {:font-weight :bold} "MECHSTAIN 2026"]]
+             [ui/center
+              [ui/label "7DRL (unofficial)"]]]
         (map-indexed
           (fn [idx {:keys [label action]}]
             (menu-button label (= cursor idx) action)))
