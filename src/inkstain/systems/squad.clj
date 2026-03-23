@@ -97,9 +97,13 @@
             (if (not reassign?)
               alive-allies
               (let [sensor-range config/sensor-range
+                    [ax ay] anchor-pos
+                    in-sensor-range? (fn [e] (< (math/distance [ax ay] (:pos e)) sensor-range))
                     nearest-enemy (when (seq enemies)
                                     (combat/find-nearest-hostile anchor-pos
-                                      (filter combat/alive? enemies)))
+                                      (filter
+                                        (fn [e] (and (in-sensor-range? e) (combat/alive? e)))
+                                        enemies)))
 
                     slots (case tactical-mode
                             :aggressive
