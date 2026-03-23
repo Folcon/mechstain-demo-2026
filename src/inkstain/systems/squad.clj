@@ -96,7 +96,10 @@
             alive-allies
             (if (not reassign?)
               alive-allies
-              (let [sensor-range config/sensor-range
+              (let [;; TODO: pull sensor range from individual mechs,
+                    ;;   pool sensor range (all mechs share sensor range)
+                    ;;   or allow sensor range networks (mechs share sensor range with lance or partners)
+                    sensor-range config/sensor-range
                     [ax ay] anchor-pos
                     in-sensor-range? (fn [e] (< (math/distance [ax ay] (:pos e)) sensor-range))
                     nearest-enemy (when (seq enemies)
