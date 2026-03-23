@@ -69,15 +69,9 @@
 
 (defn needs-reassignment?
   "check if allies need slot reassignment"
-  [allies anchor-pos reassign-threshold]
-  (or
-    ;; any ally has no slot
-    (some #(nil? (:slot %)) allies)
-    ;; anchor moved significantly from when slots were assigned
-    (some (fn [ally]
-            (when-let [slot-anchor (get-in ally [:slot :anchor])]
-              (> (math/distance anchor-pos slot-anchor) reassign-threshold)))
-      allies)))
+  [allies]
+  ;; any ally has no slot
+  (some #(nil? (:slot %)) allies))
 
 (defn update-ally-slots
   "assign or reassign ally :slot positions based on tactical mode"
@@ -90,7 +84,7 @@
                     hold-radius hold-spread reassign-threshold]} config/squad-slot-config
 
             ;; do we need to reassign?
-            reassign? (needs-reassignment? alive-allies anchor-pos reassign-threshold)
+            reassign? (needs-reassignment? alive-allies)
 
             ;; if no reassignment needed, return as-is
             alive-allies
