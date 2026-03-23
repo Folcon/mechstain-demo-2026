@@ -81,6 +81,21 @@ jobs:
             echo "RELEASE_VERSION=dev-${GITHUB_SHA::7}" >> $GITHUB_ENV
           fi
 
+      # JWM BUILD STEP
+      ## Adding a JWM build step until we merge with upstream
+      - name: Resolve dependencies
+        run: clojure -Spath > /dev/null
+
+      - name: Build JWM
+        shell: bash
+        run: |
+          JWM_DIR=$(find ~/.gitlibs -type d -name "script" -path "*jwm*/script" | head -1 | xargs dirname)
+          echo "Building JWM at: $JWM_DIR"
+          cd "$JWM_DIR"
+          python3 script/build.py
+
+      # END JWM BUILD STEP
+
       - name: Build uberjar
         run: clojure -T:build uber
 
