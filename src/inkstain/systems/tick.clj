@@ -221,7 +221,7 @@
                   ally (if (and needs-repath? target)
                          (let [tx (Math/round ^double (first target))
                                ty (Math/round ^double (second target))
-                               raw-path (pathfinding/try-search grid
+                               raw-path (pathfinding/loose-search grid
                                           [(Math/round ^double ax) (Math/round ^double
                                                                      ay)]
                                           [tx ty])
@@ -256,7 +256,7 @@
                 (let [[ex ey] (:pos enemy)
                       timer (- (or (:repath-timer enemy) 0) dt)
                       enemy (if (<= timer 0)
-                              (let [raw-path (pathfinding/try-search grid
+                              (let [raw-path (pathfinding/loose-search grid
                                                [(Math/round ^double ex) (Math/round ^double ey)]
                                                [(Math/round ^double px) (Math/round ^double py)])
                                     path (if raw-path (corridor/smooth-path grid raw-path) [])]
