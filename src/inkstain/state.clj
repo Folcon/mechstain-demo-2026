@@ -9,7 +9,7 @@
 
 (defonce *window (promise))
 (defonce *mode (atom :editor))
-(defonce *screen (ui/signal :menu))  ;; :menu :playing :paused :dead
+(defonce *screen (ui/signal [:menu]))  ;; :menu :playing :paused :dead
 (defonce *state (ui/signal nil))
 (defonce *ui-tree (atom nil))
 

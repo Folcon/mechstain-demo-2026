@@ -65,6 +65,7 @@
            :height   (second config/init-window-size)
            :x        :center
            :y        :center
+           :on-paint #'input/on-frame!
            :on-event #'maybe-save-window-rect
            :exit-on-close? (if config/debug? false true)}
           (restore-window-rect))

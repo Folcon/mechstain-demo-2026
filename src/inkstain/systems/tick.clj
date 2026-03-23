@@ -329,7 +329,7 @@
 
 (defn tick-check-death [state]
   (when (<= (:hp (:player state)) 0)
-    (reset! state/*screen :dead))
+    (input/swap-focus! :dead))
   state)
 
 (defn tick [state {:keys [held controller dt] :as opts}]

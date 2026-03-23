@@ -1,8 +1,8 @@
 (ns inkstain.game
   (:require [io.github.humbleui.ui :as ui]
-            [inkstain.config :as config]
             [inkstain.state :as state]
             [inkstain.fns :as fns]
+            [inkstain.input :as input]
             [inkstain.render :as render]))
 
 
@@ -14,10 +14,14 @@
      [ui/label {:font-weight :bold} "MECHSTAIN"]]
     [ui/button {:on-click (fn [_]
                             (reset! state/*state (render/init-state))
-                            (reset! state/*screen :playing))}
+                            (input/push-focus! :playing))}
      "Start"]
     [ui/button {:on-click fns/maybe-quit}
      "Quit"]]])
+
+(input/register-handlers! :menu
+  {:a-button   (fn [_state] (input/push-focus! :playing))
+   :b-button   (fn [state] (fns/maybe-quit state))})
 
 (ui/defcomp pause-screen []
   [ui/stack
@@ -27,10 +31,14 @@
      [ui/column {:gap 20}
       [ui/center
        [ui/label {:font-weight :bold} "PAUSED"]]
-      [ui/button {:on-click (fn [_] (reset! state/*screen :playing))}
+      [ui/button {:on-click (fn [_] (input/swap-focus! :playing))}
        "Resume"]
-      [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
+      [ui/button {:on-click (fn [_] (input/clear-focus!))}
        "Return to Menu"]]]]])
+
+(input/register-handlers! :paused
+  {:a-button   (fn [_] (input/swap-focus! :playing))
+   :b-button   (fn [_] (input/clear-focus!))})
 
 (ui/defcomp death-screen []
   (let [score (:score @state/*state)]
@@ -44,20 +52,26 @@
        [ui/label (str "Kills: " (:kills score))]]
       [ui/center
        [ui/label (str "Scrap: " (:scrap score))]]
-      [ui/button {:on-click (fn [_] (reset! state/*screen :menu))}
+      [ui/button {:on-click (fn [_] (input/pop-focus!))}
        "Return to Menu"]]]))
 
+(input/register-handlers! :dead
+  {:a-button   (fn [_] (input/pop-focus!))})
 
 (ui/defcomp game-root []
   [ui/key-listener
    {:on-key-down (fn [e]
                    (when (= :escape (:key e))
-                     (case @state/*screen
-                       :playing (reset! state/*screen :paused)
-                       :paused  (reset! state/*screen :playing)
+                     (case (peek @state/*screen)
+                       :playing (input/push-focus! :paused)
+                       :paused  (input/pop-focus!)
                        nil)))}
-   (case @state/*screen
-     :menu    [menu-screen]
-     :playing [render/ui]
-     :paused  [pause-screen]
-     :dead    [death-screen])])
+   (do (println :*screen @state/*screen)
+     (case (peek @state/*screen)
+       :menu    [menu-screen]
+       :playing [render/ui]
+       :paused  [pause-screen]
+       :dead    [death-screen]))])
+
+(input/register-handlers! :playing
+  {:start   (fn [_] (input/swap-focus! :paused))})

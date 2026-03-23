@@ -100,12 +100,10 @@
     (swap! state/*state assoc :last-render now-ns)
 
     ;; one tick, one swap
-    (when (= :playing @state/*screen)
+    (when (= :playing (peek @state/*screen))
       (let [held @state/*keys-held
-            ;; Poll each frame in on-paint
-            controller (when-let [^ControllerState cs (input/get-state 0)]
-                         (when (input/connected? cs)
-                           cs))]
+            ;; need controller for axis sticks
+            controller @input/*current-controller]
         (swap! state/*state tick/tick {:held held :controller controller :dt dt})))
 
     ;; smoothly zoom
