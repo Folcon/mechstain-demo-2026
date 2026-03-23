@@ -20,7 +20,9 @@
      "Quit"]]])
 
 (input/register-handlers! :menu
-  {:a-button   (fn [_state] (input/push-focus! :playing))
+  {:a-button   (fn [_state]
+                 (reset! state/*state (render/init-state))
+                 (input/push-focus! :playing))
    :b-button   (fn [state] (fns/maybe-quit state))})
 
 (ui/defcomp pause-screen []
