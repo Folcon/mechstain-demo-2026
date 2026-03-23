@@ -66,30 +66,24 @@
   (.-dpadRightJustPressed ^ControllerState controller-state))
 
 (defn a-button [controller-state]
-  (println :a)
   (.-aJustPressed ^ControllerState controller-state))
 
 (defn b-button [controller-state]
-  (println :b)
   (.-bJustPressed ^ControllerState controller-state))
 
 (defn x-button [controller-state]
-  (println :x)
   (.-xJustPressed ^ControllerState controller-state))
 
 (defn y-button [controller-state]
-  (println :y)
   (.-yJustPressed ^ControllerState controller-state))
 
 (defn left-bumper-button [controller-state]
   (.-lbJustPressed ^ControllerState controller-state))
 
 (defn right-bumper-button [controller-state]
-  (println :y)
   (.-rbJustPressed ^ControllerState controller-state))
 
 (defn start-button [controller-state]
-  (println :start)
   (.-startJustPressed ^ControllerState controller-state))
 
 (defn back-button [controller-state]
