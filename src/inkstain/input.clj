@@ -186,8 +186,9 @@
 
 (def *handlers (atom {}))
 
+;; TODO: make this smart enough to do key reassignment
 (defn register-handlers! [focus-id handler-map]
-  (swap! *handlers assoc focus-id handler-map))
+  (swap! *handlers update focus-id merge handler-map))
 
 (defn pop-focus [stack]
   (if (> (count stack) 1)
