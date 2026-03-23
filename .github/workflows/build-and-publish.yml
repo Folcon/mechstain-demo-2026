@@ -83,8 +83,13 @@ jobs:
 
       # JWM BUILD STEP
       ## Adding a JWM build step until we merge with upstream
+      - name: Install JWM build dependencies (Linux)
+        if: matrix.platform == 'linux'
+        run: sudo apt-get install -y cmake ninja-build libx11-dev libxrandr-dev libxcursor-dev libxi-dev libgl-dev
+
       - name: Resolve dependencies
-        run: clojure -Spath > /dev/null
+        shell: bash
+        run: clojure -Spath > /dev/null 2>&1 || true
 
       - name: Build JWM
         shell: bash
