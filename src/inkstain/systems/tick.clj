@@ -96,7 +96,10 @@
                                valid? (and chase-target
                                         (combat/alive? chase-target)
                                         (in-sensor-range? chase-target))]
-                           (if valid? ally (dissoc ally :chase)))
+                           (if valid?
+                             ally
+                             ;; clear chase, so force a repath
+                             (-> ally (dissoc :chase) (assoc :repath-timer 0))))
                          ally)
 
                   ;; decide action based on tactical mode
