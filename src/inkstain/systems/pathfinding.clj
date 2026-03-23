@@ -100,7 +100,7 @@
 (defn loose-search
   "only check if the end is walkable"
   [grid start end]
-  (try-search grid start end {:check-end? true}))
+  (try-search grid start end {:check-start? false :check-end? true}))
 
 (defn draw-grid
   ([grid start end] (draw-grid grid start end {}))
