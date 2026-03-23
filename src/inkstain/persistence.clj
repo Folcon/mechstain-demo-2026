@@ -1,6 +1,7 @@
 (ns inkstain.persistence
   (:require [clojure.java.io :as io]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn])
+  (:import [java.io File]))
 
 
 
@@ -16,14 +17,14 @@
   (io/file (System/getProperty "user.home") ".inkstain" "mechstain.edn"))
 
 (defn load-data []
-  (let [f (save-file)]
+  (let [^File f (save-file)]
     (if (.exists f)
       (edn/read-string (slurp f))
       {:last-used "default"
        :presets {"default" default-comp}})))
 
 (defn save-data! [data]
-  (let [f (save-file)]
+  (let [^File f (save-file)]
     (.mkdirs (.getParentFile f))
     (spit f (pr-str data))))
 
