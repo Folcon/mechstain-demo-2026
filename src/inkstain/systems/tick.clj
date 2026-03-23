@@ -89,6 +89,16 @@
                   ;; detection range
                   enemy-nearby? (and enemy-dist (<= enemy-dist 8.0))
 
+                  ;; clear stale chase
+                  ally (if-let [chase (:chase ally)]
+                         (let [chase-target (some #(when (= (:id %) (:anchor-id chase)) %)
+                                              (:enemies state))
+                               valid? (and chase-target
+                                        (combat/alive? chase-target)
+                                        (in-sensor-range? chase-target))]
+                           (if valid? ally (dissoc ally :chase)))
+                         ally)
+
                   ;; decide action based on tactical mode
                   ;; Each mode returns one of:
                   ;;   :idle   -> stop moving (melee, hold)
@@ -175,16 +185,6 @@
                         [:follow 0.75]
 
                         :else nil)))
-
-                  ;; clear stale chase
-                  ally (if-let [chase (:chase ally)]
-                         (let [chase-target (some #(when (= (:id %) (:anchor-id chase)) %)
-                                              (:enemies state))
-                               valid? (and chase-target
-                                        (combat/alive? chase-target)
-                                        (in-sensor-range? chase-target))]
-                           (if valid? ally (dissoc ally :chase)))
-                         ally)
 
                   ;; apply action
                   ally (case action
