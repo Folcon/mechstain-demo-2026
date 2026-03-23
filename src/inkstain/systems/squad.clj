@@ -69,9 +69,11 @@
 
 (defn needs-reassignment?
   "check if allies need slot reassignment"
-  [allies]
+  [allies tactical-mode]
   ;; any ally has no slot
-  (some #(nil? (:slot %)) allies))
+  (or
+    (some #(nil? (:slot %)) allies)
+    (some #(not= tactical-mode (:tactical-mode %)) allies)))
 
 (defn update-ally-slots
   "assign or reassign ally :slot positions based on tactical mode"
@@ -84,7 +86,7 @@
                     hold-radius hold-spread reassign-threshold]} config/squad-slot-config
 
             ;; do we need to reassign?
-            reassign? (needs-reassignment? alive-allies)
+            reassign? (needs-reassignment? alive-allies tactical-mode)
 
             ;; if no reassignment needed, return as-is
             alive-allies
@@ -150,9 +152,11 @@
                 (mapv (fn [ally]
                         (if-let [slot-pos (get assignments (:id ally))]
                           (assoc ally :slot (merge slot-pos
-                                              {:anchor-type anchor-type}
+                                              {:type :dynamic
+                                               :anchor-type anchor-type}
                                               (when anchor-id
-                                                {:anchor-id anchor-id})))
+                                                {:anchor-id anchor-id}))
+                            :tactical-mode tactical-mode)
                           ally))
                   alive-allies)))
 
@@ -178,3 +182,25 @@
       (when anchor-pos
         [(+ (first anchor-pos) (* r (Math/cos a)))
          (+ (second anchor-pos) (* r (Math/sin a)))]))))
+
+(defn resolve-target [entity player-pos enemies]
+  (when-let [slot (:slot entity)]
+    (case (:type slot)
+      :static (or (when (and (:radius slot) (:angle slot))
+                    (let [[px py] (:pos slot)
+                          r (:radius slot)
+                          a (:angle slot)]
+                      [(+ px (* r (Math/cos a)))
+                       (+ py (* r (Math/sin a)))]))
+                (:pos slot))
+      :dynamic (let [anchor-pos (case (:anchor-type slot)
+                                  :player player-pos
+                                  :enemy (some #(when (= (:id %) (:anchor-id slot))
+                                                  (:pos %))
+                                           enemies)
+                                  player-pos)
+                     r (:radius slot)
+                     a (:angle slot)]
+                 (when anchor-pos
+                   [(+ (first anchor-pos) (* r (Math/cos a)))
+                    (+ (second anchor-pos) (* r (Math/sin a)))])))))

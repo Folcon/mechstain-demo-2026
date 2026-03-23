@@ -97,31 +97,18 @@
 
                            ;; enemy nearby - chase it
                            (and enemy-nearby? (<= timer 0))
-                           (let [[ex ey] (:pos nearest-enemy)
-                                 raw-path (pathfinding/try-search grid
-                                            [(Math/round ^double ax) (Math/round ^double ay)]
-                                            [(Math/round ^double ex) (Math/round ^double ey)])
-                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                             (assoc ally
-                               :path (vec (or path []))
-                               :state (if (seq path) :moving :idle)
-                               :repath-timer 0.5))
+                           (assoc ally
+                             :slot {:type :dynamic :anchor-type :enemy
+                                    :anchor-id (:id nearest-enemy)
+                                    :radius 0.0 :angle 0.0}
+                             :new-repath-timer 0.5)
 
                            (or
                              ;; repath toward player with offset
                              (and (> player-dist 3.0) (<= timer 0))
                              ;; repath towards player who's moved
                              (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                           (let [[tx ty] (squad/resolve-slot ally [px py] (:enemies state))
-                                 tx (Math/round ^double tx)
-                                 ty (Math/round ^double ty)
-                                 raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
-                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                             (assoc ally
-                               :path (vec (or path []))
-                               :state (if (seq path) :moving :idle)
-                               :repath-timer 0.75
-                               :last-target [px py]))
+                           (assoc ally :new-repath-timer 0.75)
 
                            :else
                            (assoc ally :repath-timer (max 0 timer)))
@@ -136,32 +123,17 @@
                              melee-range? (assoc ally :state :idle :path [])
                              ;; enemy near player - intercept
                              (and enemy-near-player? (<= timer 0))
-                             (let [[ex ey] (:pos nearest-enemy)
-                                   raw-path (pathfinding/try-search grid
-                                              [(Math/round ^double ax) (Math/round ^double ay)]
-                                              [(Math/round ^double ex) (Math/round ^double ey)])
-                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally
-                                 :path (vec (or path []))
-                                 :state (if (seq path) :moving :idle)
-                                 :repath-timer 0.5
-                                 :last-target [ex ey]))
+                             (assoc ally
+                               :slot {:type :dynamic :anchor-type :enemy
+                                      :anchor-id (:id nearest-enemy)
+                                      :radius 0.0 :angle 0.0}
+                               :new-repath-timer 0.5)
                              ;; too far from player - return
                              (and (> ally-to-player 3.0) (<= timer 0))
                              ;; pathfind back to player
-                             (let [[tx ty] (squad/resolve-slot ally [px py] (:enemies state))
-                                   tx (Math/round ^double tx)
-                                   ty (Math/round ^double ty)
-                                   raw-path (pathfinding/try-search grid
-                                              [(Math/round ^double ax) (Math/round ^double ay)]
-                                              [tx ty])
-                                   path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                               (assoc ally
-                                 :path (vec (or path []))
-                                 :state (if (seq path) :moving :idle)
-                                 :repath-timer 0.75
-                                 :last-target [px py]))
+                             (assoc ally :new-repath-timer 0.75)
                              :else (assoc ally :repath-timer (max 0 timer))))
+
 
                          :hold
                          (if melee-range?
@@ -186,35 +158,60 @@
                                  slot-dist (when (and sx sy)
                                              (math/distance [ax ay] [sx sy]))
                                  ;; within 1.5 tiles of slot is in position so attack directly
-                                 in-position? (and slot-dist (< slot-dist 1.5))
+                                 in-position? (and slot-dist (< slot-dist 1.5))]
                                  ;; if in position, close in on enemy directly
                                  ;;   otherwise, move to flank slot
-                                 [tx ty] (if in-position?
-                                           (:pos nearest-enemy)
-                                           (squad/resolve-slot ally [px py] (:enemies state)))
-                                 tx (Math/round ^double tx)
-                                 ty (Math/round ^double ty)
-                                 raw-path (pathfinding/try-search grid
-                                            [(Math/round ^double ax) (Math/round ^double ay)]
-                                            [tx ty])
-                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
                              (assoc ally
-                               :path (vec (or path []))
-                               :state (if (seq path) :moving :idle)
-                               :repath-timer (if in-position? 0.5 0.75)))
+                               :slot {:type :dynamic :anchor-type :enemy
+                                      :anchor-id (:id nearest-enemy)
+                                      :radius 0.0 :angle 0.0}
+                               :new-repath-timer (if in-position? 0.5 0.75)))
                            (<= timer 0)
                            ;; no enemy - follow player
-                           (let [[tx ty] (squad/resolve-slot ally [px py] (:enemies state))
-                                 tx (Math/round ^double tx)
-                                 ty (Math/round ^double ty)
-                                 raw-path (pathfinding/try-search grid [(Math/round ^double ax) (Math/round ^double ay)] [tx ty])
-                                 path (if raw-path (corridor/smooth-path grid raw-path) [])]
-                             (assoc ally
-                               :path (vec (or path []))
-                               :state (if (seq path) :moving :idle)
-                               :repath-timer 0.75
-                               :last-target [px py]))
-                           :else (assoc ally :repath-timer (max 0 timer))))]
+                           (assoc ally :new-repath-timer 0.75)
+                           :else (assoc ally :repath-timer (max 0 timer))))
+
+                  target (squad/resolve-target ally [px py] (:enemies state))
+                  path (:path ally)
+
+                  ;; update path endpoint to track live target
+                  path (if (and target path (>= (count path) 2))
+                         (assoc path (dec (count path)) target)
+                         path)
+
+                  new-repath-timer (:new-repath-timer ally)
+
+                  ally (dissoc ally :new-repath-timer)
+
+                  ;; does ally need a fresh repath?
+                  needs-repath? (or (nil? path)
+                                  (< (count path) 2)
+                                  (<= timer 0)
+                                  new-repath-timer)
+
+                  ally (if (and needs-repath? target)
+                         (let [tx (Math/round ^double (first target))
+                               ty (Math/round ^double (second target))
+                               raw-path (pathfinding/try-search grid
+                                          [(Math/round ^double ax) (Math/round ^double
+                                                                     ay)]
+                                          [tx ty])
+                               smoothed (if raw-path (corridor/smooth-path grid raw-path)
+                                          [])
+                               ;; drop last point, will be replaced by live target each tick
+                               size (count smoothed)
+                               smoothed' (if (>= size 2)
+                                           (subvec smoothed 0 (dec size))
+                                           smoothed)
+                               ;; re-append current target position
+                               final-path (if (seq smoothed')
+                                            (conj smoothed' target)
+                                            smoothed)]
+                           (assoc ally
+                             :path (vec final-path)
+                             :state (if (seq final-path) :moving :idle)
+                             :repath-timer (if new-repath-timer new-repath-timer 0.75)))
+                         (assoc ally :path (vec (or path []))))]
               (if (combat/alive? ally)
                 (corridor/step-corridor-steering ally dt)
                 ally))))
