@@ -299,3 +299,13 @@
          (str "Scrap: " (get-in @state/*state [:score :scrap])
            "  Kills: " (get-in @state/*state [:score :kills])
            "  Time Alive: " (format "%3d" (long (get-in @state/*state [:score :time-alive]))) "s")]]]]]]])
+
+;; TODO: this approach feels a small bit better, think about how to unify and improve this design
+(defn change-tactical-mode! [mode]
+  (swap! state/*state assoc :tactical-mode mode))
+
+(input/register-handlers! :playing
+  {:dpad-up   (fn [_] (change-tactical-mode! :aggressive))
+   :dpad-down   (fn [_] (change-tactical-mode! :defensive))
+   :dpad-left   (fn [_] (change-tactical-mode! :flank))
+   :dpad-right   (fn [_] (change-tactical-mode! :hold))})

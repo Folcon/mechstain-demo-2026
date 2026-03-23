@@ -43,14 +43,7 @@
         ;; combine and clamp to unit length
         dx (+ dx-kb lx)
         dy (+ dy-kb ly)
-        magnitude (Math/sqrt (+ (* dx dx) (* dy dy)))
-
-        tactical-mode (when controller
-                        (cond
-                          (input/dpad-up controller) :aggressive
-                          (input/dpad-down controller) :defensive
-                          (input/dpad-left controller) :flank
-                          (input/dpad-right controller) :hold))]
+        magnitude (Math/sqrt (+ (* dx dx) (* dy dy)))]
     (-> state
       (update :player
         (fn [player]
@@ -63,9 +56,7 @@
                 :target-heading target-heading
                 :target-speed (* max-speed speed-frac)))
             ;; if no input, decelerate to stop
-            (assoc player :target-speed 0.0))))
-      (cond->
-        tactical-mode (assoc :tactical-mode tactical-mode)))))
+            (assoc player :target-speed 0.0)))))))
 
 (defn tick-ally-movement [state dt]
   (let [allies (:allies state)
