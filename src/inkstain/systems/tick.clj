@@ -89,88 +89,114 @@
                   ;; detection range
                   enemy-nearby? (and enemy-dist (<= enemy-dist 8.0))
 
-                  ally (case (-> state :tactical-mode)
-                         :aggressive
-                         (cond
-                           melee-range?
-                           (assoc ally :state :idle :path [])  ;; stop and fight
+                  ;; decide action based on tactical mode
+                  ;; Each mode returns one of:
+                  ;;   :idle   -> stop moving (melee, hold)
+                  ;;   :chase  -> override slot to pursue enemy
+                  ;;   :follow -> repath to current slot
+                  ;;   nil     -> tick timer, do nothing
+                  [action chase-timer]
+                  (case (-> state :tactical-mode)
+                    :aggressive
+                    (cond
+                      melee-range?
+                      [:idle]  ;; stop and fight
 
-                           ;; enemy nearby - chase it
-                           (and enemy-nearby? (<= timer 0))
-                           (assoc ally
-                             :slot {:type :dynamic :anchor-type :enemy
-                                    :anchor-id (:id nearest-enemy)
-                                    :radius 0.0 :angle 0.0}
-                             :new-repath-timer 0.5)
+                      ;; enemy nearby - chase it
+                      (and enemy-nearby? (<= timer 0))
+                      [:chase 0.5]
 
-                           (or
-                             ;; repath toward player with offset
-                             (and (> player-dist 3.0) (<= timer 0))
-                             ;; repath towards player who's moved
-                             (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
-                           (assoc ally :new-repath-timer 0.75)
+                      (or
+                        ;; repath toward player with offset
+                        (and (> player-dist 3.0) (<= timer 0))
+                        ;; repath towards player who's moved
+                        (and (= (:state ally) :idle) (> player-moved-dist 2.0)))
+                      [:follow 0.75]
 
-                           :else
-                           (assoc ally :repath-timer (max 0 timer)))
+                      :else nil)
 
-                         :defensive
-                         (let [ally-to-player (math/distance [ax ay] [px py])
-                               enemy-near-player? (and nearest-enemy
-                                                    (<= (math/distance [px py] (:pos nearest-enemy))
-                                                      3.0))]
-                           (cond
-                             ;; in melee range - fight
-                             melee-range? (assoc ally :state :idle :path [])
-                             ;; enemy near player - intercept
-                             (and enemy-near-player? (<= timer 0))
-                             (assoc ally
-                               :slot {:type :dynamic :anchor-type :enemy
-                                      :anchor-id (:id nearest-enemy)
-                                      :radius 0.0 :angle 0.0}
-                               :new-repath-timer 0.5)
-                             ;; too far from player - return
-                             (and (> ally-to-player 3.0) (<= timer 0))
-                             ;; pathfind back to player
-                             (assoc ally :new-repath-timer 0.75)
-                             :else (assoc ally :repath-timer (max 0 timer))))
+                    :defensive
+                    (let [ally-to-player (math/distance [ax ay] [px py])
+                          enemy-near-player? (and nearest-enemy
+                                               (<= (math/distance [px py] (:pos nearest-enemy))
+                                                 3.0))]
+                      (cond
+                        ;; in melee range - fight
+                        melee-range? [:idle]
 
+                        ;; enemy near player - intercept
+                        (and enemy-near-player? (<= timer 0))
+                        [:chase 0.5]
 
-                         :hold
-                         (if melee-range?
-                           (assoc ally :state :idle :path [])
-                           (assoc ally :state :idle :path [] :repath-timer (max 0 timer)))
+                        ;; too far from player - return
+                        (and (> ally-to-player 3.0) (<= timer 0))
+                        [:follow 0.75]
 
-                         :flank
-                         ;; Flanking has a complex logic chain, so I'll document it here for reference
-                         ;;  1. melee range -> stop and fight
-                         ;;  2. enemy nearby -> check distance to assigned flank slot, if within 1.5 tiles
-                         ;;    peep is in position and should close in on the enemy directly with shorter repath timer
-                         ;;    of 0.5s, if they're not in position yet, pathfind to the flank slot with longer timer of 0.75s
-                         ;;  3. no enemy -> pathfind to slot around the player
-                         ;;  4. tick timer down
-                         (cond
-                           melee-range? (assoc ally :state :idle :path [])
+                        ;; pathfind back to player
+                        :else nil))
 
-                           ;; enemy nearby - move to flank position or close in
-                           (and enemy-nearby? (<= timer 0))
-                           (let [[sx sy] (squad/resolve-slot ally [px py] (:enemies state))
-                                 ;; if close to flank slot, close in on enemy directly
-                                 slot-dist (when (and sx sy)
-                                             (math/distance [ax ay] [sx sy]))
-                                 ;; within 1.5 tiles of slot is in position so attack directly
-                                 in-position? (and slot-dist (< slot-dist 1.5))]
-                                 ;; if in position, close in on enemy directly
-                                 ;;   otherwise, move to flank slot
-                             (assoc ally
-                               :slot {:type :dynamic :anchor-type :enemy
-                                      :anchor-id (:id nearest-enemy)
-                                      :radius 0.0 :angle 0.0}
-                               :new-repath-timer (if in-position? 0.5 0.75)))
-                           (<= timer 0)
-                           ;; no enemy - follow player
-                           (assoc ally :new-repath-timer 0.75)
-                           :else (assoc ally :repath-timer (max 0 timer))))
+                    :hold
+                    (let [slot-pos (squad/resolve-slot ally [px py] (:enemies state))
+                          slot-dist (when slot-pos (math/distance [ax ay] slot-pos))
+                          at-slot? (and slot-dist (< slot-dist 1.0))]
+                      (cond
+                        melee-range? [:idle]
+                        at-slot?     nil      ;; already there, just tick timer
+                        :else        [:follow 0.75]))
 
+                    :flank
+                    ;; Flanking has a complex logic chain, so I'll document it here for reference
+                    ;;  1. melee range -> stop and fight
+                    ;;  2. enemy nearby -> check distance to assigned flank slot, if within 1.5 tiles
+                    ;;    peep is in position and should close in on the enemy directly with shorter repath timer
+                    ;;    of 0.5s, if they're not in position yet, pathfind to the flank slot with longer timer of 0.75s
+                    ;;  3. no enemy -> pathfind to slot around the player
+                    ;;  4. tick timer down
+                    (let [[sx sy] (squad/resolve-slot ally [px py] (:enemies state))
+                          ;; if close to flank slot, close in on enemy directly
+                          slot-dist (when (and sx sy)
+                                      (math/distance [ax ay] [sx sy]))
+                          ;; within 1.5 tiles of slot is in position so attack directly
+                          in-position? (and slot-dist (< slot-dist 1.5))]
+                      (cond
+                        melee-range? [:idle]
+
+                        ;; enemy nearby - move to flank position or close in
+                        ;; if in position, close in on enemy directly
+                        ;;   otherwise, move to flank slot
+                        (and enemy-nearby? in-position? (<= timer 0))
+                        [:follow 0.5]
+
+                        (and enemy-nearby? (<= timer 0))
+                        [:follow 0.75]
+
+                        (<= timer 0)
+                        ;; no enemy - follow player
+                        [:follow 0.75]
+
+                        :else nil)))
+
+                  ;; clear stale chase
+                  ally (if-let [chase (:chase ally)]
+                         (let [chase-target (some #(when (= (:id %) (:anchor-id chase)) %)
+                                              (:enemies state))
+                               valid? (and chase-target
+                                        (combat/alive? chase-target)
+                                        (in-sensor-range? chase-target))]
+                           (if valid? ally (dissoc ally :chase)))
+                         ally)
+
+                  ;; apply action
+                  ally (case action
+                         :idle  (assoc ally :state :idle :path [])
+                         :chase (assoc ally
+                                  :chase {:anchor-type :enemy
+                                          :anchor-id (:id nearest-enemy)}
+                                  :new-repath-timer chase-timer)
+                         :follow (assoc ally :new-repath-timer chase-timer)
+                         (assoc ally :repath-timer (max 0 timer)))
+
+                  ;; pathfind
                   target (squad/resolve-target ally [px py] (:enemies state))
                   path (:path ally)
 
