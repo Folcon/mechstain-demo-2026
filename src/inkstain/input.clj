@@ -190,6 +190,22 @@
 (defn register-handlers! [focus-id handler-map]
   (swap! *handlers update focus-id merge handler-map))
 
+(defonce *stick-nav (atom nil))
+
+(defn stick->direction [[lx ly]]
+  (let [deadzone 0.5
+        dir (cond
+              (< ly (- deadzone)) :up
+              (> ly deadzone)     :down
+              (< lx (- deadzone)) :left
+              (> lx deadzone)     :right
+              :else nil)
+        prev @*stick-nav]
+    (reset! *stick-nav dir)
+    (when (and dir (not= dir prev))
+      dir)))
+
+
 (defn pop-focus [stack]
   (if (> (count stack) 1)
     (pop stack)

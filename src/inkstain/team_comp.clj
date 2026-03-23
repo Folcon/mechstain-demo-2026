@@ -240,8 +240,6 @@
                 "On Keyboard: Move with WASD + Arrow keys + Space confirm / Esc Cancel"]]]]])]]])))
 
 
-(defonce *stick-nav (atom nil))
-
 (input/register-handlers! :team-comp
   {:dpad-up    (fn [_] (navigate! :up))
    :dpad-down  (fn [_] (navigate! :down))
@@ -251,15 +249,6 @@
    :b-button   (fn [_] (input/pop-focus!))
    :start      (fn [_] (activate-deploy!))
 
-   :left-stick (fn [[lx ly]]
-                 (let [deadzone 0.5
-                       dir (cond
-                             (< ly (- deadzone)) :up
-                             (> ly deadzone)     :down
-                             (< lx (- deadzone)) :left
-                             (> lx deadzone)     :right
-                             :else nil)
-                       prev @*stick-nav]
-                   (when (not= dir prev)
-                     (when dir (navigate! dir))
-                     (reset! *stick-nav dir))))})
+   :left-stick (fn [axes]
+                 (when-let [dir (input/stick->direction axes)]
+                   (navigate! dir)))})
