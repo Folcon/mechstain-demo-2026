@@ -169,38 +169,28 @@
                   ally))
           allies)))))
 
-(defn resolve-slot [ally player-pos enemies]
-  (when-let [slot (:slot ally)]
-    (let [anchor-pos (case (:anchor-type slot)
-                       :player player-pos
-                       :enemy (when-let [e (first (filter #(= (:id %)
-                                                             (:anchor-id slot)) enemies))]
-                                (:pos e))
-                       player-pos)
-          r (:radius slot)
-          a (:angle slot)]
-      (when anchor-pos
-        [(+ (first anchor-pos) (* r (Math/cos a)))
-         (+ (second anchor-pos) (* r (Math/sin a)))]))))
-
-(defn resolve-target [entity player-pos enemies]
+(defn resolve-slot [entity player-pos enemies]
   (when-let [slot (:slot entity)]
     (case (:type slot)
-      :static (or (when (and (:radius slot) (:angle slot))
-                    (let [[px py] (:pos slot)
-                          r (:radius slot)
-                          a (:angle slot)]
-                      [(+ px (* r (Math/cos a)))
-                       (+ py (* r (Math/sin a)))]))
-                (:pos slot))
-      :dynamic (let [anchor-pos (case (:anchor-type slot)
-                                  :player player-pos
-                                  :enemy (some #(when (= (:id %) (:anchor-id slot))
-                                                  (:pos %))
-                                           enemies)
-                                  player-pos)
-                     r (:radius slot)
-                     a (:angle slot)]
-                 (when anchor-pos
-                   [(+ (first anchor-pos) (* r (Math/cos a)))
-                    (+ (second anchor-pos) (* r (Math/sin a)))])))))
+      :static (:pos slot)
+
+      :dynamic
+      (let [anchor-pos (case (:anchor-type slot)
+                         :player player-pos
+                         :enemy (some #(when (= (:id %) (:anchor-id slot))
+                                         (:pos %))
+                                  enemies)
+                         player-pos)
+            r (:radius slot)
+            a (:angle slot)]
+        (when anchor-pos
+          [(+ (first anchor-pos) (* r (Math/cos a)))
+           (+ (second anchor-pos) (* r (Math/sin a)))]))
+      nil)))
+
+(defn resolve-target [entity player-pos enemies]
+  (if-let [chase (:chase entity)]
+    ;; chasing, go directly to enemy
+    (some #(when (= (:id %) (:anchor-id chase)) (:pos %)) enemies)
+    ;; resolve formation slot
+    (resolve-slot entity player-pos enemies)))
