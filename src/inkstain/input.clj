@@ -239,8 +239,8 @@
                                  :dpad-right (dpad-right controller)
                                  nil)]
                 :when pressed?]
-          (handler @state/*state))))
-    (when cs
-      (window/request-frame window))))
+          (handler @state/*state)))
+      (when cs
+        (window/request-frame window)))))
 
 (def set-press-and-hold window/set-press-and-hold)
