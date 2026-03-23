@@ -8,41 +8,97 @@
 
 
 
+(defn menu-button [label focused? on-click]
+  [ui/clickable {:on-click (fn [_] (on-click))}
+   [ui/rect {:paint {:fill (if focused? 0xFF446688 0xFF555555)} :radius 6}
+    [ui/padding {:horizontal 20 :vertical 10}
+     [ui/label {:paint {:fill 0xFFFFFFFF}
+                :font-weight (if focused? :bold :normal)}
+      label]]]])
+
+(defn menu-nav [cursor-atom n direction]
+  (case direction
+    (:up :left)    (swap! cursor-atom #(mod (dec %) n))
+    (:down :right) (swap! cursor-atom #(mod (inc %) n))
+    nil))
+
+(defonce *menu-cursor (ui/signal 0))
+
+(def menu-actions
+  [{:label "Start"
+    :action (fn []
+              (team-comp/init!)
+              (input/push-focus! :team-comp))}
+   {:label "Quit"
+    :action #(fns/maybe-quit nil)}])
+
 (ui/defcomp menu-screen []
-  [ui/center
-   [ui/column {:gap 20}
-    [ui/center
-     [ui/label {:font-weight :bold} "MECHSTAIN"]]
-    [ui/button {:on-click (fn [_]
-                            (team-comp/init!)
-                            (input/push-focus! :team-comp))}
-     "Start"]
-    [ui/button {:on-click fns/maybe-quit}
-     "Quit"]]])
+  (let [cursor @*menu-cursor]
+    [ui/key-listener
+     {:on-key-down (fn [e]
+                     (case (:key e)
+                       (:up :w)    (menu-nav *menu-cursor 2 :up)
+                       (:down :s)  (menu-nav *menu-cursor 2 :down)
+                       (:enter :space) ((:action (nth menu-actions cursor)))
+                       :escape     (fns/maybe-quit nil)
+                       nil))}
+     [ui/center
+      (into [ui/column {:gap 20}
+             [ui/center
+              [ui/label {:font-weight :bold} "MECHSTAIN"]]]
+        (map-indexed
+          (fn [idx {:keys [label action]}]
+            (menu-button label (= cursor idx) action)))
+        menu-actions)]]))
 
 (input/register-handlers! :menu
-  {:a-button   (fn [_]
-                 (team-comp/init!)
-                 (input/push-focus! :team-comp))
-   :b-button   (fn [state] (fns/maybe-quit state))})
+  {:dpad-up    (fn [_] (menu-nav *menu-cursor 2 :up))
+   :dpad-down  (fn [_] (menu-nav *menu-cursor 2 :down))
+   :a-button   (fn [_] ((:action (nth menu-actions @*menu-cursor))))
+   :b-button   (fn [state] (fns/maybe-quit state))
+   :left-stick (fn [axes]
+                 (when-let [dir (input/stick->direction axes)]
+                   (menu-nav *menu-cursor 2 dir)))})
 
+
+(defonce *pause-cursor (ui/signal 0))
+
+(def pause-actions
+  [{:label "Resume"
+    :action #(input/swap-focus! :playing)}
+   {:label "Return to Menu"
+    :action #(input/clear-focus!)}])
 
 (ui/defcomp pause-screen []
-  [ui/stack
-   [render/ui]  ;; game still visible behind
-   [ui/rect {:paint {:fill 0x80000000}}  ;; dark overlay
-    [ui/center
-     [ui/column {:gap 20}
-      [ui/center
-       [ui/label {:font-weight :bold} "PAUSED"]]
-      [ui/button {:on-click (fn [_] (input/swap-focus! :playing))}
-       "Resume"]
-      [ui/button {:on-click (fn [_] (input/clear-focus!))}
-       "Return to Menu"]]]]])
+  (let [cursor @*pause-cursor]
+    [ui/key-listener
+     {:on-key-down (fn [e]
+                     (case (:key e)
+                       (:up :w)    (menu-nav *pause-cursor 2 :up)
+                       (:down :s)  (menu-nav *pause-cursor 2 :down)
+                       (:enter :space) ((:action (nth pause-actions cursor)))
+                       :escape     ((:action (first pause-actions)))
+                       nil))}
+     [ui/stack
+      [render/ui]  ;; game still visible behind
+      [ui/rect {:paint {:fill 0x80000000}}  ;; dark overlay
+       [ui/center
+        (into [ui/column {:gap 20}
+               [ui/center
+                [ui/label {:font-weight :bold} "PAUSED"]]]
+          (map-indexed
+            (fn [idx {:keys [label action]}]
+              (menu-button label (= cursor idx) action)))
+          pause-actions)]]]]))
 
 (input/register-handlers! :paused
-  {:a-button   (fn [_] (input/swap-focus! :playing))
-   :b-button   (fn [_] (input/clear-focus!))})
+  {:dpad-up    (fn [_] (menu-nav *pause-cursor 2 :up))
+   :dpad-down  (fn [_] (menu-nav *pause-cursor 2 :down))
+   :a-button   (fn [_] ((:action (nth pause-actions @*pause-cursor))))
+   :b-button   (fn [_] (input/clear-focus!))
+   :left-stick (fn [axes]
+                 (when-let [dir (input/stick->direction axes)]
+                   (menu-nav *pause-cursor 2 dir)))})
 
 (ui/defcomp death-screen []
   (let [score (:score @state/*state)]
